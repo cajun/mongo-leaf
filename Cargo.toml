@@ -1,0 +1,17 @@
+[package]
+name = "mongoc-to-rs-sys"
+version = "1.15.1"
+authors = ["Zac Kleinpeter <zac@kleinpeter.org>"]
+edition = "2018"
+build = "build.rs"
+
+[dependencies]
+libc        = "0.2"
+openssl-sys = { version = "0.9", features = ["vendored"] }
+bson = "0.14.0"
+
+[build-dependencies]
+bindgen = "0.51.1"
+cmake = "0.1"
+pkg-config = "0.3"
+vcpkg = "0.2.6"
