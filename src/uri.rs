@@ -1,4 +1,6 @@
 use crate::bindings;
+use crate::bsonc::Bsonc;
+use bson::Document;
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use std::ptr;
@@ -14,6 +16,7 @@ pub trait Uric {
     fn destroy(&mut self);
     fn get_auth_mechanism<'a>(&'a self) -> Option<Cow<'a, str>>;
     fn get_auth_source<'a>(&'a self) -> Option<Cow<'a, str>>;
+    fn get_compressors<'a>(&'a self) -> Option<bson::Document>;
 }
 
 impl Uric for Uri {
@@ -90,6 +93,20 @@ impl Uric for Uri {
             }
         }
     }
+
+    fn get_compressors<'a>(&'a self) -> Option<bson::Document> {
+        assert!(!self.inner.is_null());
+
+        unsafe {
+            let ptr = bindings::mongoc_uri_get_compressors(self.inner);
+            if ptr.is_null() {
+                None
+            } else {
+                let bson = Bsonc::from_ptr(ptr);
+                bson.as_document().ok()
+            }
+        }
+    }
 }
 
 impl Drop for Uri {
@@ -141,5 +158,14 @@ mod tests {
     fn get_auth_source() {
         let uri = Uri::new("mongodb://localhost:27017/?authSource=other_db").unwrap();
         assert_eq!(uri.get_auth_source(), Some(Cow::Borrowed("other_db")));
+    }
+
+    #[test]
+    fn get_compressors() {
+        let uri = Uri::new("mongodb://localhost:27017/?compressors=zlib,zstd").unwrap();
+        assert_eq!(
+            uri.get_compressors(),
+            Some(doc! {"zlib": "yes", "zstd": "yes"})
+        );
     }
 }
