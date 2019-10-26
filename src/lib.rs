@@ -11,6 +11,7 @@ mod bindings {
 
 mod bsonc;
 mod error;
+pub mod prelude;
 mod uri;
 
 pub use error::{
