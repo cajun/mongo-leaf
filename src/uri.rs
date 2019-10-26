@@ -9,6 +9,52 @@ pub struct Uri {
     inner: *mut bindings::mongoc_uri_t,
 }
 
+#[derive(Debug)]
+pub struct Host<'a> {
+    next: *mut bindings::mongoc_host_list_t,
+    pub host: Cow<'a, str>,
+    pub host_and_port: Cow<'a, str>,
+    pub port: u16,
+    pub family: i32,
+}
+
+impl<'a> Host<'a> {
+    fn from_ptr(ptr: *const bindings::mongoc_host_list_t) -> Option<Self> {
+        if ptr.is_null() {
+            None
+        } else {
+            let host = unsafe {
+                let host = CStr::from_ptr((*ptr).host.as_ptr()).to_string_lossy();
+                let host_and_port = CStr::from_ptr((*ptr).host_and_port.as_ptr()).to_string_lossy();
+                let port = (*ptr).port;
+                let family = (*ptr).family;
+
+                Host {
+                    next: (*ptr).next,
+                    host,
+                    host_and_port,
+                    port,
+                    family,
+                }
+            };
+
+            Some(host)
+        }
+    }
+
+    fn host_list_from_ptr(ptr: *const bindings::mongoc_host_list_t) -> Vec<Self> {
+        let mut next_ptr = ptr;
+        let mut hosts = vec![];
+
+        while let Some(h) = Host::from_ptr(next_ptr) {
+            next_ptr = h.next;
+            hosts.push(h);
+        }
+
+        hosts
+    }
+}
+
 pub trait Uric {
     fn new<T: Into<Vec<u8>>>(uri_string: T) -> Option<Uri>;
     fn new_with_result<T: Into<Vec<u8>>>(uri_string: T) -> Result<Uri>;
@@ -18,6 +64,7 @@ pub trait Uric {
     fn get_auth_mechanism<'a>(&'a self) -> Option<Cow<'a, str>>;
     fn get_auth_source<'a>(&'a self) -> Option<Cow<'a, str>>;
     fn get_compressors<'a>(&'a self) -> Option<bson::Document>;
+    fn get_hosts<'a, 'b>(&'a self) -> Option<Vec<Host<'b>>>;
 }
 
 impl Uric for Uri {
@@ -134,6 +181,58 @@ impl Uric for Uri {
             } else {
                 let cstr = CStr::from_ptr(ptr);
                 Some(String::from_utf8_lossy(cstr.to_bytes()))
+            }
+        }
+    }
+
+    /// Fetches a linked list of hosts that were defined in the URI (the comma-separated host
+    /// section).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::borrow::Cow;
+    ///
+    /// let uri = Uri::new("mongodb://localhost:27017/some_db").unwrap();
+    ///
+    /// let maybe_hosts = uri.get_hosts();
+    /// assert!(maybe_hosts.is_some());
+    /// let hosts = maybe_hosts.unwrap();
+    /// assert_eq!(hosts.len(), 1);
+    /// let host = hosts.first().unwrap();
+    /// assert_eq!(host.host, Cow::Borrowed("localhost"));
+    /// assert_eq!(host.port, 27017, "Err {:?}", host);
+    /// assert_eq!(host.host_and_port, Cow::Borrowed("localhost:27017"), "Err {:?}", host);
+    /// assert_eq!(host.family, 0, "Err {:?}", host);
+    /// ```
+    ///
+    /// # Multiple Hosts
+    /// ```
+    /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::borrow::Cow;
+    ///
+    /// let uri = Uri::new("mongodb://snoopy:5544,woodstock:4455/").unwrap();
+    ///
+    /// let maybe_hosts = uri.get_hosts();
+    /// assert!(maybe_hosts.is_some());
+    /// let hosts = maybe_hosts.unwrap();
+    /// assert_eq!(hosts.len(), 2);
+    /// let snoopy = hosts.first().unwrap();
+    /// assert_eq!(snoopy.host_and_port, Cow::Borrowed("snoopy:5544"));
+    /// let woodstock = hosts.last().unwrap();
+    /// assert_eq!(woodstock.host_and_port, Cow::Borrowed("woodstock:4455"));
+    /// ```
+    fn get_hosts<'a, 'b>(&'a self) -> Option<Vec<Host<'b>>> {
+        assert!(!self.inner.is_null());
+
+        unsafe {
+            let ptr = bindings::mongoc_uri_get_hosts(self.inner);
+            if ptr.is_null() {
+                None
+            } else {
+                let hosts = Host::host_list_from_ptr(ptr);
+                Some(hosts)
             }
         }
     }
