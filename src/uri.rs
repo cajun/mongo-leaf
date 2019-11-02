@@ -1,73 +1,46 @@
-use crate::{bindings, bsonc::Bsonc, error::BsoncError, Result};
-use bson::Document;
+use crate::{
+    bindings,
+    bsonc::Bsonc,
+    error::BsoncError,
+    host::{Host, Hostc},
+    Result,
+};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use std::ptr;
 
 #[derive(Debug)]
-pub struct Uri {
+pub struct Uric {
     inner: *mut bindings::mongoc_uri_t,
 }
 
-#[derive(Debug)]
-pub struct Host<'a> {
-    next: *mut bindings::mongoc_host_list_t,
-    pub host: Cow<'a, str>,
-    pub host_and_port: Cow<'a, str>,
-    pub port: u16,
-    pub family: i32,
-}
+pub trait Uri {
+    type Inner: Uri + Sized;
+    type Host: Host;
 
-impl<'a> Host<'a> {
-    fn from_ptr(ptr: *const bindings::mongoc_host_list_t) -> Option<Self> {
-        if ptr.is_null() {
-            None
-        } else {
-            let host = unsafe {
-                let host = CStr::from_ptr((*ptr).host.as_ptr()).to_string_lossy();
-                let host_and_port = CStr::from_ptr((*ptr).host_and_port.as_ptr()).to_string_lossy();
-                let port = (*ptr).port;
-                let family = (*ptr).family;
-
-                Host {
-                    next: (*ptr).next,
-                    host,
-                    host_and_port,
-                    port,
-                    family,
-                }
-            };
-
-            Some(host)
-        }
+    fn inner(&self) -> *mut bindings::mongoc_uri_t {
+        ptr::null_mut()
     }
-
-    fn host_list_from_ptr(ptr: *const bindings::mongoc_host_list_t) -> Vec<Self> {
-        let mut next_ptr = ptr;
-        let mut hosts = vec![];
-
-        while let Some(h) = Host::from_ptr(next_ptr) {
-            next_ptr = h.next;
-            hosts.push(h);
-        }
-
-        hosts
-    }
-}
-
-pub trait Uric {
-    fn new<T: Into<Vec<u8>>>(uri_string: T) -> Option<Uri>;
-    fn new_with_result<T: Into<Vec<u8>>>(uri_string: T) -> Result<Uri>;
-    fn get_database<'a>(&'a self) -> Option<Cow<'a, str>>;
-    fn copy(&self) -> Option<Uri>;
+    fn new<T: Into<Vec<u8>>>(uri_string: T) -> Option<Self::Inner>;
+    fn new_with_result<T: Into<Vec<u8>>>(uri_string: T) -> Result<Self::Inner>;
+    fn get_database(&self) -> Option<Cow<str>>;
+    fn copy(&self) -> Option<Self::Inner>;
     fn destroy(&mut self);
-    fn get_auth_mechanism<'a>(&'a self) -> Option<Cow<'a, str>>;
-    fn get_auth_source<'a>(&'a self) -> Option<Cow<'a, str>>;
-    fn get_compressors<'a>(&'a self) -> Option<bson::Document>;
-    fn get_hosts<'a, 'b>(&'a self) -> Option<Vec<Host<'b>>>;
+    fn get_auth_mechanism(&self) -> Option<Cow<str>>;
+    fn get_auth_source(&self) -> Option<Cow<str>>;
+    fn get_compressors(&self) -> Option<bson::Document>;
+    fn get_hosts(&self) -> Option<Vec<Self::Host>>;
+    fn as_str(&self) -> Cow<str>;
 }
 
-impl Uric for Uri {
+impl Uri for Uric {
+    type Inner = Uric;
+    type Host = Hostc;
+
+    fn inner(&self) -> *mut bindings::mongoc_uri_t {
+        self.inner
+    }
+
     /// Creates a new Uri String
     ///
     /// # Examples
@@ -88,7 +61,7 @@ impl Uric for Uri {
     /// ];
     ///
     /// valid_uris.iter().for_each(|valid| {
-    ///   let uri = Uri::new(valid.to_string());
+    ///   let uri = Uric::new(valid.to_string());
     ///   assert!(uri.is_some());
     /// });
     /// ```
@@ -97,17 +70,17 @@ impl Uric for Uri {
     /// ```
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uri::new("failme://localhost");
+    /// let uri = Uric::new("failme://localhost");
     /// assert!(uri.is_none());
     /// ```
-    fn new<T: Into<Vec<u8>>>(uri_string: T) -> Option<Uri> {
+    fn new<T: Into<Vec<u8>>>(uri_string: T) -> Option<Self::Inner> {
         CString::new(uri_string).ok().and_then(|uri_cstring| {
             let uri = unsafe { bindings::mongoc_uri_new(uri_cstring.as_ptr()) };
 
             if uri.is_null() {
                 None
             } else {
-                Some(Uri { inner: uri })
+                Some(Uric { inner: uri })
             }
         })
     }
@@ -132,7 +105,7 @@ impl Uric for Uri {
     /// ];
     ///
     /// valid_uris.iter().for_each(|valid| {
-    ///   let uri = Uri::new_with_result(valid.to_string());
+    ///   let uri = Uric::new_with_result(valid.to_string());
     ///   assert!(uri.is_ok());
     /// });
     /// ```
@@ -141,10 +114,10 @@ impl Uric for Uri {
     /// ```
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uri::new_with_result("failme://localhost");
+    /// let uri = Uric::new_with_result("failme://localhost");
     /// assert!(uri.is_err(), "{:?}", uri);
     /// ```
-    fn new_with_result<T: Into<Vec<u8>>>(uri_string: T) -> Result<Uri> {
+    fn new_with_result<T: Into<Vec<u8>>>(uri_string: T) -> Result<Self::Inner> {
         let uri_cstring = CString::new(uri_string)?;
 
         let mut error = BsoncError::empty();
@@ -155,7 +128,7 @@ impl Uric for Uri {
         if uri.is_null() {
             Err(error.into())
         } else {
-            Ok(Uri { inner: uri })
+            Ok(Uric { inner: uri })
         }
     }
 
@@ -168,10 +141,10 @@ impl Uric for Uri {
     /// use mongoc_to_rs_sys::prelude::*;
     /// use std::borrow::Cow;
     ///
-    /// let uri = Uri::new("mongodb://localhost:27017/some_db").unwrap();
+    /// let uri = Uric::new("mongodb://localhost:27017/some_db").unwrap();
     /// assert_eq!(uri.get_database(), Some(Cow::Borrowed("some_db")));
     /// ```
-    fn get_database<'a>(&'a self) -> Option<Cow<'a, str>> {
+    fn get_database(&self) -> Option<Cow<str>> {
         assert!(!self.inner.is_null());
 
         unsafe {
@@ -194,7 +167,7 @@ impl Uric for Uri {
     /// use mongoc_to_rs_sys::prelude::*;
     /// use std::borrow::Cow;
     ///
-    /// let uri = Uri::new("mongodb://localhost:27017/some_db").unwrap();
+    /// let uri = Uric::new("mongodb://localhost:27017/some_db").unwrap();
     ///
     /// let maybe_hosts = uri.get_hosts();
     /// assert!(maybe_hosts.is_some());
@@ -212,7 +185,7 @@ impl Uric for Uri {
     /// use mongoc_to_rs_sys::prelude::*;
     /// use std::borrow::Cow;
     ///
-    /// let uri = Uri::new("mongodb://snoopy:5544,woodstock:4455/").unwrap();
+    /// let uri = Uric::new("mongodb://snoopy:5544,woodstock:4455/").unwrap();
     ///
     /// let maybe_hosts = uri.get_hosts();
     /// assert!(maybe_hosts.is_some());
@@ -223,7 +196,7 @@ impl Uric for Uri {
     /// let woodstock = hosts.last().unwrap();
     /// assert_eq!(woodstock.host_and_port, Cow::Borrowed("woodstock:4455"));
     /// ```
-    fn get_hosts<'a, 'b>(&'a self) -> Option<Vec<Host<'b>>> {
+    fn get_hosts(&self) -> Option<Vec<Self::Host>> {
         assert!(!self.inner.is_null());
 
         unsafe {
@@ -231,7 +204,7 @@ impl Uric for Uri {
             if ptr.is_null() {
                 None
             } else {
-                let hosts = Host::host_list_from_ptr(ptr);
+                let hosts = Hostc::host_list_from_ptr(ptr);
                 Some(hosts)
             }
         }
@@ -245,12 +218,12 @@ impl Uric for Uri {
     /// use mongoc_to_rs_sys::prelude::*;
     /// use std::borrow::Cow;
     ///
-    /// let uri = Uri::new("mongodb://localhost:27017/copied").unwrap();
+    /// let uri = Uric::new("mongodb://localhost:27017/copied").unwrap();
     /// let copy = uri.copy();
     /// assert!(copy.is_some());
     /// assert_eq!(copy.unwrap().get_database(), Some(Cow::Borrowed("copied")));
     /// ```
-    fn copy(&self) -> Option<Uri> {
+    fn copy(&self) -> Option<Self::Inner> {
         assert!(!self.inner.is_null());
 
         unsafe {
@@ -258,7 +231,7 @@ impl Uric for Uri {
             if ptr.is_null() {
                 None
             } else {
-                Some(Uri { inner: ptr })
+                Some(Uric { inner: ptr })
             }
         }
     }
@@ -271,7 +244,7 @@ impl Uric for Uri {
     /// ```should_panic
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let mut uri = Uri::new("mongodb://localhost:27017/to_destroy").unwrap();
+    /// let mut uri = Uric::new("mongodb://localhost:27017/to_destroy").unwrap();
     /// uri.destroy();
     /// uri.get_database();
     /// ```
@@ -292,11 +265,11 @@ impl Uric for Uri {
     /// use mongoc_to_rs_sys::prelude::*;
     /// use std::borrow::Cow;
     ///
-    /// let uri = Uri::new("mongodb://some@localhost:27017/?authMechanism=CoolBeans").unwrap();
+    /// let uri = Uric::new("mongodb://some@localhost:27017/?authMechanism=CoolBeans").unwrap();
     /// assert_eq!(uri.get_auth_mechanism(), Some(Cow::Borrowed("CoolBeans")));
     /// # }
     /// ```
-    fn get_auth_mechanism<'a>(&'a self) -> Option<Cow<'a, str>> {
+    fn get_auth_mechanism(&self) -> Option<Cow<str>> {
         assert!(!self.inner.is_null());
 
         unsafe {
@@ -319,11 +292,11 @@ impl Uric for Uri {
     /// use mongoc_to_rs_sys::prelude::*;
     /// use std::borrow::Cow;
     ///
-    /// let uri = Uri::new("mongodb://localhost:27017/?authSource=other_db").unwrap();
+    /// let uri = Uric::new("mongodb://localhost:27017/?authSource=other_db").unwrap();
     /// assert_eq!(uri.get_auth_source(), Some(Cow::Borrowed("other_db")));
     /// # }
     /// ```
-    fn get_auth_source<'a>(&'a self) -> Option<Cow<'a, str>> {
+    fn get_auth_source(&self) -> Option<Cow<str>> {
         assert!(!self.inner.is_null());
 
         unsafe {
@@ -347,14 +320,14 @@ impl Uric for Uri {
     /// # fn main() {
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uri::new("mongodb://localhost:27017/?compressors=zlib,zstd").unwrap();
+    /// let uri = Uric::new("mongodb://localhost:27017/?compressors=zlib,zstd").unwrap();
     /// assert_eq!(
     ///     uri.get_compressors(),
     ///     Some(doc! {"zlib": "yes", "zstd": "yes"})
     /// );
     /// # }
     /// ```
-    fn get_compressors<'a>(&'a self) -> Option<bson::Document> {
+    fn get_compressors(&self) -> Option<bson::Document> {
         assert!(!self.inner.is_null());
 
         unsafe {
@@ -367,10 +340,33 @@ impl Uric for Uri {
             }
         }
     }
+
+    fn as_str(&self) -> Cow<str> {
+        assert!(!self.inner.is_null());
+        unsafe {
+            let cstr = CStr::from_ptr(bindings::mongoc_uri_get_string(self.inner));
+            String::from_utf8_lossy(cstr.to_bytes())
+        }
+    }
 }
 
-impl Drop for Uri {
+unsafe impl Send for Uric {}
+unsafe impl Sync for Uric {}
+
+impl Drop for Uric {
     fn drop(&mut self) {
         self.destroy();
+    }
+}
+
+impl Clone for Uric {
+    fn clone(&self) -> Uric {
+        Uric::new(self.as_str().into_owned()).unwrap()
+    }
+}
+
+impl PartialEq for Uric {
+    fn eq(&self, other: &Uric) -> bool {
+        self.as_str() == other.as_str()
     }
 }
