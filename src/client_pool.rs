@@ -1,25 +1,31 @@
 use crate::{
     bindings,
+    client::{Client, Clientc},
     uri::{Uri, Uric},
 };
 use std::ptr;
 
+#[derive(Eq, Debug)]
 pub struct ClientPoolc {
     uri: Uric,
     inner: *mut bindings::mongoc_client_pool_t,
 }
 
-pub trait ClientPool {
-    type Inner: ClientPool + Sized;
+pub trait ClientPool<'a> {
+    type Pool: ClientPool<'a> + Sized;
     type Uri: Uri + Sized;
+    type Client: Client;
 
-    fn new(uri: Self::Uri) -> Self::Inner;
+    fn new(uri: Self::Uri) -> Self::Pool;
     fn destroy(&mut self);
+    fn pop(&'a self) -> Self::Client;
+    fn push(&self, client: &mut Self::Client);
 }
 
-impl ClientPool for ClientPoolc {
-    type Inner = ClientPoolc;
+impl<'a> ClientPool<'a> for ClientPoolc {
+    type Pool = ClientPoolc;
     type Uri = Uric;
+    type Client = Clientc<'a>;
 
     /// From MongoC documentation:
     ///
@@ -37,7 +43,7 @@ impl ClientPool for ClientPoolc {
     /// let uri = Uric::new("mongodb://localhost/").unwrap();
     /// let pool = ClientPoolc::new(uri);
     /// ```
-    fn new(uri: Self::Uri) -> Self::Inner {
+    fn new(uri: Self::Uri) -> Self::Pool {
         crate::init();
         unsafe {
             let inner = bindings::mongoc_client_pool_new(uri.inner());
@@ -63,15 +69,68 @@ impl ClientPool for ClientPoolc {
     /// pool.destroy();
     /// ```
     fn destroy(&mut self) {
-        unsafe {
-            bindings::mongoc_client_pool_destroy(self.inner);
+        if !self.inner.is_null() {
+            unsafe {
+                bindings::mongoc_client_pool_destroy(self.inner);
+            }
+            self.inner = ptr::null_mut();
         }
-        self.inner = ptr::null_mut();
+    }
+
+    /// From MongoC documentation:
+    ///
+    /// Retrieve a mongoc_client_t from the client pool, or create one. The total number of clients
+    /// that can be created from this pool is limited by the URI option “maxPoolSize”, default 100.
+    /// If this number of clients has been created and all are in use, mongoc_client_pool_pop blocks
+    /// until another thread returns a client with mongoc_client_pool_push().
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mongoc_to_rs_sys::prelude::*;
+    ///
+    /// let uri = Uric::new("mongodb://localhost/").unwrap();
+    /// let pool = ClientPoolc::new(uri);
+    /// let client = pool.pop();
+    /// assert_eq!(*client.client_pool, pool);
+    /// ```
+    fn pop(&'a self) -> Self::Client {
+        unsafe { Clientc::new(self, bindings::mongoc_client_pool_pop(self.inner)) }
+    }
+
+    /// From MongoC documentation:
+    ///
+    /// This function returns a mongoc_client_t back to the client pool.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mongoc_to_rs_sys::prelude::*;
+    ///
+    /// let uri = Uric::new("mongodb://localhost/").unwrap();
+    /// let pool = ClientPoolc::new(uri);
+    /// let mut client = pool.pop();
+    /// assert_eq!(*client.client_pool, pool);
+    /// pool.push(&mut client);
+    /// ```
+    fn push(&self, client: &mut Self::Client) {
+        if !client.inner().is_null() {
+            unsafe {
+                bindings::mongoc_client_pool_push(dbg!(self.inner), dbg!(client.inner()));
+            }
+            client.destroy();
+        }
     }
 }
 
 impl Drop for ClientPoolc {
     fn drop(&mut self) {
         self.destroy();
+    }
+}
+
+impl PartialEq for ClientPoolc {
+    fn eq(&self, other: &Self) -> bool {
+        self.uri.eq(&other.uri)
     }
 }

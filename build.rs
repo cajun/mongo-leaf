@@ -69,6 +69,7 @@ fn lin(mongoc_version: &str) {
             .whitelist_function("mongoc_.*")
             .whitelist_type("mongoc_error_.*")
             .whitelist_var("BSON_ERROR.*")
+            .whitelist_var("MONGOC.*")
             .generate()
             .expect("Unable to generate bindings")
             .write_to_file(out_path.join("bindings.rs"))

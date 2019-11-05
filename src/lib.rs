@@ -12,10 +12,12 @@ mod bindings {
 }
 
 mod bsonc;
+mod client;
 mod client_pool;
 mod error;
 mod host;
 pub mod prelude;
+mod read_prefs;
 mod uri;
 
 pub use error::{

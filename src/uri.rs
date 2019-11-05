@@ -9,7 +9,7 @@ use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use std::ptr;
 
-#[derive(Debug)]
+#[derive(Eq, Debug)]
 pub struct Uric {
     inner: *mut bindings::mongoc_uri_t,
 }
@@ -21,8 +21,8 @@ pub trait Uri {
     fn inner(&self) -> *mut bindings::mongoc_uri_t {
         ptr::null_mut()
     }
-    fn new<T: Into<Vec<u8>>>(uri_string: T) -> Option<Self::Inner>;
-    fn new_with_result<T: Into<Vec<u8>>>(uri_string: T) -> Result<Self::Inner>;
+    fn new(uri_string: impl Into<String>) -> Option<Self::Inner>;
+    fn new_with_result(uri_string: impl Into<String>) -> Result<Self::Inner>;
     fn get_database(&self) -> Option<Cow<str>>;
     fn copy(&self) -> Option<Self::Inner>;
     fn destroy(&mut self);
@@ -73,16 +73,18 @@ impl Uri for Uric {
     /// let uri = Uric::new("failme://localhost");
     /// assert!(uri.is_none());
     /// ```
-    fn new<T: Into<Vec<u8>>>(uri_string: T) -> Option<Self::Inner> {
-        CString::new(uri_string).ok().and_then(|uri_cstring| {
-            let uri = unsafe { bindings::mongoc_uri_new(uri_cstring.as_ptr()) };
+    fn new(uri_string: impl Into<String>) -> Option<Self::Inner> {
+        CString::new(uri_string.into())
+            .ok()
+            .and_then(|uri_cstring| {
+                let uri = unsafe { bindings::mongoc_uri_new(uri_cstring.as_ptr()) };
 
-            if uri.is_null() {
-                None
-            } else {
-                Some(Uric { inner: uri })
-            }
-        })
+                if uri.is_null() {
+                    None
+                } else {
+                    Some(Uric { inner: uri })
+                }
+            })
     }
 
     /// Creates a new Uri String with Result
@@ -117,8 +119,8 @@ impl Uri for Uric {
     /// let uri = Uric::new_with_result("failme://localhost");
     /// assert!(uri.is_err(), "{:?}", uri);
     /// ```
-    fn new_with_result<T: Into<Vec<u8>>>(uri_string: T) -> Result<Self::Inner> {
-        let uri_cstring = CString::new(uri_string)?;
+    fn new_with_result(uri_string: impl Into<String>) -> Result<Self::Inner> {
+        let uri_cstring = CString::new(uri_string.into())?;
 
         let mut error = BsoncError::empty();
 
