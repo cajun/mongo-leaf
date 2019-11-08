@@ -7,6 +7,10 @@ use std::fmt;
 use bson::{DecoderError, Document, EncoderError, ValueAccessError};
 use std::ffi::NulError;
 
+/// Result that's used in all functions that perform operations
+/// on the database.
+pub type Result<T> = std::result::Result<T, MongoError>;
+
 /// Wrapper for all errors that can occur in the driver.
 pub enum MongoError {
     /// Error in the underlying C driver.

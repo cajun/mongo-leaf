@@ -2,9 +2,9 @@ use crate::{
     bindings,
     bsonc::Bsonc,
     client_pool::{ClientPool, ClientPoolc},
-    error::BsoncError,
+    cursor::{Cursor, Cursorc},
+    error::{BsoncError, Result},
     read_prefs::{ReadPrefs, ReadPrefsc},
-    Result,
 };
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
@@ -21,6 +21,8 @@ pub struct Clientc<'a> {
 }
 
 pub trait Client {
+    type Cursor: Cursor;
+
     type ReadPrefs: ReadPrefs + Sized + Default;
     fn inner(&self) -> *mut bindings::mongoc_client_t {
         ptr::null_mut()
@@ -32,6 +34,13 @@ pub trait Client {
         command: bson::Document,
         read_prefs: Option<Self::ReadPrefs>,
     ) -> Result<bson::Document>;
+
+    fn command(
+        &mut self,
+        db_name: impl Into<String>,
+        command: bson::Document,
+        read_prefs: Option<Self::ReadPrefs>,
+    ) -> Result<Self::Cursor>;
 }
 
 impl<'a> Clientc<'a> {
@@ -42,6 +51,8 @@ impl<'a> Clientc<'a> {
 
 impl Client for Clientc<'_> {
     type ReadPrefs = ReadPrefsc;
+    type Cursor = Cursorc;
+
     fn inner(&self) -> *mut bindings::mongoc_client_t {
         self.inner
     }
@@ -74,6 +85,36 @@ impl Client for Clientc<'_> {
             out.as_document()
         } else {
             Err(error.into())
+        }
+    }
+
+    fn command(
+        &mut self,
+        db_name: impl Into<String>,
+        command: bson::Document,
+        read_prefs: Option<Self::ReadPrefs>,
+    ) -> Result<Self::Cursor> {
+        let mut out = Bsonc::from_document(&doc! {})?;
+        unsafe {
+            let bsonc = Bsonc::from_document(&command)?;
+            let readc = read_prefs.unwrap_or_default();
+
+            CString::new(db_name.into())
+                .map_err(|err| err.into())
+                .map(|db_cstring| {
+                    let ptr = bindings::mongoc_client_command(
+                        self.inner,
+                        db_cstring.as_ptr(),
+                        0, // Flags unused
+                        0, // Skip unused
+                        0, // limit unused
+                        0, // Batch Size unused
+                        bsonc.inner(),
+                        Bsonc::empty().inner(), // Fields unused
+                        readc.inner(),
+                    );
+                    Cursorc::from_ptr(ptr)
+                })
         }
     }
 

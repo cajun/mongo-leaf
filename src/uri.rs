@@ -1,9 +1,8 @@
 use crate::{
     bindings,
     bsonc::Bsonc,
-    error::BsoncError,
+    error::{BsoncError, Result},
     host::{Host, Hostc},
-    Result,
 };
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
@@ -21,8 +20,7 @@ pub trait Uri {
     fn inner(&self) -> *mut bindings::mongoc_uri_t {
         ptr::null_mut()
     }
-    fn new(uri_string: impl Into<String>) -> Option<Self::Inner>;
-    fn new_with_result(uri_string: impl Into<String>) -> Result<Self::Inner>;
+    fn new(uri_string: impl Into<String>) -> Result<Self::Inner>;
     fn get_database(&self) -> Option<Cow<str>>;
     fn copy(&self) -> Option<Self::Inner>;
     fn destroy(&mut self);
@@ -39,52 +37,6 @@ impl Uri for Uric {
 
     fn inner(&self) -> *mut bindings::mongoc_uri_t {
         self.inner
-    }
-
-    /// Creates a new Uri String
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
-    ///
-    /// let valid_uris = vec![
-    ///   "mongodb://localhost/",
-    ///   "mongodb://localhost/?replicaSet=myreplset",
-    ///   "mongodb://myuser:mypass@localhost/",
-    ///   "mongodb://kerberosuser%40EXAMPLE.COM@example.com/?authMechanism=GSSAPI",
-    ///   "mongodb://[::1]:27017/",
-    ///   "mongodb://10.0.0.1:27017,10.0.0.1:27018,[::1]:27019/?ssl=true",
-    ///   "mongodb://%2Ftmp%2Fmongodb-27017.sock",
-    ///   "mongodb://user:pass@%2Ftmp%2Fmongodb-27017.sock",
-    ///   "mongodb://localhost,[::1]/mydb?authSource=mydb"
-    /// ];
-    ///
-    /// valid_uris.iter().for_each(|valid| {
-    ///   let uri = Uric::new(valid.to_string());
-    ///   assert!(uri.is_some());
-    /// });
-    /// ```
-    ///
-    /// Invalid Uri's
-    /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
-    ///
-    /// let uri = Uric::new("failme://localhost");
-    /// assert!(uri.is_none());
-    /// ```
-    fn new(uri_string: impl Into<String>) -> Option<Self::Inner> {
-        CString::new(uri_string.into())
-            .ok()
-            .and_then(|uri_cstring| {
-                let uri = unsafe { bindings::mongoc_uri_new(uri_cstring.as_ptr()) };
-
-                if uri.is_null() {
-                    None
-                } else {
-                    Some(Uric { inner: uri })
-                }
-            })
     }
 
     /// Creates a new Uri String with Result
@@ -107,7 +59,7 @@ impl Uri for Uric {
     /// ];
     ///
     /// valid_uris.iter().for_each(|valid| {
-    ///   let uri = Uric::new_with_result(valid.to_string());
+    ///   let uri = Uric::new(valid.to_string());
     ///   assert!(uri.is_ok());
     /// });
     /// ```
@@ -116,10 +68,10 @@ impl Uri for Uric {
     /// ```
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uric::new_with_result("failme://localhost");
+    /// let uri = Uric::new("failme://localhost");
     /// assert!(uri.is_err(), "{:?}", uri);
     /// ```
-    fn new_with_result(uri_string: impl Into<String>) -> Result<Self::Inner> {
+    fn new(uri_string: impl Into<String>) -> Result<Self::Inner> {
         let uri_cstring = CString::new(uri_string.into())?;
 
         let mut error = BsoncError::empty();
@@ -333,7 +285,7 @@ impl Uri for Uric {
         assert!(!self.inner.is_null());
 
         unsafe {
-            let ptr = bindings::mongoc_uri_get_compressors(self.inner);
+            let mut ptr = bindings::mongoc_uri_get_compressors(self.inner) as *mut bindings::bson_t;
             if ptr.is_null() {
                 None
             } else {

@@ -1,4 +1,4 @@
-use crate::bindings;
+use crate::{bindings, error::Result};
 use libc::c_void;
 use std::ffi::CStr;
 use std::fmt;
@@ -6,8 +6,6 @@ use std::ptr;
 use std::slice;
 
 use bson;
-
-use super::Result;
 
 pub struct Bsonc {
     inner: *mut bindings::bson_t,
@@ -17,12 +15,15 @@ impl Bsonc {
     pub fn new() -> Bsonc {
         Bsonc::from_ptr(unsafe { bindings::bson_new() })
     }
-
-    pub fn from_ptr(inner: *const bindings::bson_t) -> Bsonc {
-        assert!(!inner.is_null());
+    pub fn empty() -> Bsonc {
         Bsonc {
-            inner: inner as *mut bindings::bson_t,
+            inner: ptr::null_mut(),
         }
+    }
+
+    pub fn from_ptr(inner: *mut bindings::bson_t) -> Bsonc {
+        assert!(!inner.is_null());
+        Bsonc { inner }
     }
 
     pub fn from_document(document: &bson::Document) -> Result<Bsonc> {

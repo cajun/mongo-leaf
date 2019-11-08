@@ -12,22 +12,16 @@ mod bindings {
 }
 
 mod bsonc;
+pub mod builder;
 mod client;
 mod client_pool;
+mod cursor;
+mod database;
 mod error;
 mod host;
 pub mod prelude;
 mod read_prefs;
 mod uri;
-
-pub use error::{
-    BsoncError, BulkOperationError, InvalidParamsError, MongoError, MongoErrorCode,
-    MongoErrorDomain,
-};
-
-/// Result that's used in all functions that perform operations
-/// on the database.
-pub type Result<T> = std::result::Result<T, MongoError>;
 
 static MONGOC_INIT: Once = Once::new();
 
