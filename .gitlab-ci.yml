@@ -4,7 +4,7 @@ services:
 - name: mongo:latest
 
 before_script:
-  - apt update && apt install -y cmake libssl-dev clang
+  - apt update && apt install -y cmake libssl-dev clang > apt-build.log 2>&1
 
 stages:
   - build
@@ -17,7 +17,7 @@ rust-latest:
     MONGODB_URI: "mongodb://mongo/"
   script:
     - cargo build > build.log 2>&1
-    - cargo test --verbose
+    - cargo test -q
 
 rust-nightly:
   when: manual
@@ -27,5 +27,5 @@ rust-nightly:
     MONGODB_URI: "mongodb://mongo/"
   script:
     - cargo build > build.log 2>&1
-    - cargo test --verbose
+    - cargo test -q
   allow_failure: true
