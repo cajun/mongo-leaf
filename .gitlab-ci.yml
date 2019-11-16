@@ -3,6 +3,8 @@ image: rust:latest
 services:
 - name: mongo:latest
 
+before_script:
+  - apt update && apt install -y cmake libssl-dev
 
 stages:
   - build
@@ -14,7 +16,7 @@ rust-latest:
   variables:
     MONGODB_URI: "mongodb://mongo/"
   script:
-    - cargo build --verbose
+    - cargo build
     - cargo test --verbose
 
 rust-nightly:
@@ -24,6 +26,6 @@ rust-nightly:
   variables:
     MONGODB_URI: "mongodb://mongo/"
   script:
-    - cargo build --verbose
+    - cargo build
     - cargo test --verbose
   allow_failure: true
