@@ -17,7 +17,7 @@ rust-latest:
     MONGODB_URI: "mongodb://mongo/"
   script:
     - cargo build > build.log 2>&1
-    - cargo test -q
+    - cargo test -q --doc
 
 rust-nightly:
   when: manual
@@ -27,5 +27,5 @@ rust-nightly:
     MONGODB_URI: "mongodb://mongo/"
   script:
     - cargo build > build.log 2>&1
-    - cargo test -q
+    - cargo test -q --doc
   allow_failure: true
