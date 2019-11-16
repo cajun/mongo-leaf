@@ -43,7 +43,7 @@ impl ClientPoolc {
     pub fn new(uri: Uric) -> Self {
         crate::init();
         unsafe {
-            let inner = bindings::mongoc_client_pool_new(uri.inner());
+            let inner = bindings::mongoc_client_pool_new(uri.as_mut_ptr());
             assert!(!inner.is_null());
             ClientPoolc { uri, inner }
         }
@@ -128,9 +128,9 @@ impl<'a> ClientPool<'a> for ClientPoolc {
     /// # }
     /// ```
     fn push(&self, client: &mut Self::Client) {
-        if !client.inner().is_null() {
+        if !client.as_mut_ptr().is_null() {
             unsafe {
-                bindings::mongoc_client_pool_push(self.inner, client.inner());
+                bindings::mongoc_client_pool_push(self.inner, client.as_mut_ptr());
             }
             client.destroy();
         }
