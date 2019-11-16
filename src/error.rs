@@ -317,7 +317,7 @@ impl BsoncError {
     }
 
     #[doc(hidden)]
-    pub fn mut_inner(&mut self) -> &mut bindings::bson_error_t {
+    pub fn as_mut_ptr(&mut self) -> &mut bindings::bson_error_t {
         &mut self.inner
     }
 }
@@ -408,10 +408,10 @@ mod tests {
     fn test_bson_error_empty() {
         let mut error = BsoncError::empty();
         assert!(error.is_empty());
-        error.mut_inner().code = 1;
+        error.as_mut_ptr().code = 1;
         assert!(!error.is_empty());
-        error.mut_inner().domain = 1;
-        error.mut_inner().code = 0;
+        error.as_mut_ptr().domain = 1;
+        error.as_mut_ptr().code = 0;
         assert!(!error.is_empty());
     }
 
@@ -419,7 +419,7 @@ mod tests {
     fn test_bson_error_domain() {
         let mut error = BsoncError::empty();
         assert_eq!(MongoErrorDomain::Blank, error.domain());
-        error.mut_inner().domain = 1;
+        error.as_mut_ptr().domain = 1;
         assert_eq!(MongoErrorDomain::Client, error.domain());
     }
 
@@ -427,7 +427,7 @@ mod tests {
     fn test_bson_error_code() {
         let mut error = BsoncError::empty();
         assert_eq!(MongoErrorCode::Blank, error.code());
-        error.mut_inner().code = 1;
+        error.as_mut_ptr().code = 1;
         assert_eq!(MongoErrorCode::StreamInvalidType, error.code());
     }
 }

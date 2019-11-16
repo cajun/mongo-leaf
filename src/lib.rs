@@ -15,6 +15,7 @@ mod bsonc;
 pub mod builder;
 mod client;
 mod client_pool;
+mod collection;
 mod cursor;
 mod database;
 mod error;

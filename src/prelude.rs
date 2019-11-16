@@ -1,11 +1,13 @@
 pub use crate::{
-    client::{Client, Clientc},
-    client_pool::{ClientPool, ClientPoolc},
+    builder::{Builder, Connect, ConstructUri, SSLOptions},
+    client::Client,
+    client_pool::ClientPool,
+    collection::Collection,
     error::{
         BsoncError, BulkOperationError, InvalidParamsError, MongoError, MongoErrorCode,
-        MongoErrorDomain,
+        MongoErrorDomain, Result,
     },
-    host::{Host, Hostc},
-    read_prefs::{ReadMode, ReadPrefs, ReadPrefsc},
+    host::Host,
+    read_prefs::{ReadMode, ReadPrefs},
     uri::{Uri, Uric},
 };

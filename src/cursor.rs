@@ -21,17 +21,19 @@ impl Cursorc {
         Cursorc { inner }
     }
 
-    fn get_error(&self) -> Option<BsoncError> {
+    pub fn get_error(&self) -> Option<BsoncError> {
         assert!(!self.inner.is_null());
 
+        let mut error = BsoncError::empty();
+
         unsafe {
-            let mut error = BsoncError::empty();
-            bindings::mongoc_cursor_error(self.inner, error.mut_inner());
-            if error.is_empty() {
-                None
-            } else {
-                Some(error)
-            }
+            bindings::mongoc_cursor_error(self.inner, error.as_mut_ptr());
+        }
+
+        if error.is_empty() {
+            None
+        } else {
+            Some(error)
         }
     }
 }
@@ -59,14 +61,15 @@ impl Iterator for Cursorc {
     type Item = Result<bson::Document>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut ptr = ptr::null_mut();
-        let is_done_or_error = unsafe { bindings::mongoc_cursor_next(self.inner, ptr) };
+        let mut bson_ptr: *const bindings::bson_t = ptr::null_mut();
+
+        let success = unsafe { bindings::mongoc_cursor_next(self.inner, &mut bson_ptr) };
 
         if let Some(err) = self.get_error() {
             Some(Err(err.into()))
-        } else if !is_done_or_error {
-            let mut bson_ptr = ptr as *mut bindings::bson_t;
-            Some(Bsonc::from_ptr(bson_ptr).as_document())
+        } else if success {
+            let bsonc = Bsonc::from_ptr(bson_ptr);
+            Some(bsonc.as_document())
         } else {
             None
         }
@@ -75,8 +78,13 @@ impl Iterator for Cursorc {
 
 impl Drop for Cursorc {
     fn drop(&mut self) {
-        unsafe {
-            bindings::mongoc_cursor_destroy(self.inner);
+        if !self.inner.is_null() {
+            unsafe {
+                dbg!("cursor drop start");
+                bindings::mongoc_cursor_destroy(dbg!(self.inner));
+                self.inner = ptr::null_mut();
+                dbg!("cursor drop done");
+            }
         }
     }
 }

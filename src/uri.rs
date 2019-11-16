@@ -76,8 +76,9 @@ impl Uri for Uric {
 
         let mut error = BsoncError::empty();
 
-        let uri =
-            unsafe { bindings::mongoc_uri_new_with_error(uri_cstring.as_ptr(), error.mut_inner()) };
+        let uri = unsafe {
+            bindings::mongoc_uri_new_with_error(uri_cstring.as_ptr(), error.as_mut_ptr())
+        };
 
         if uri.is_null() {
             Err(error.into())
@@ -203,10 +204,14 @@ impl Uri for Uric {
     /// uri.get_database();
     /// ```
     fn destroy(&mut self) {
-        unsafe {
-            bindings::mongoc_uri_destroy(self.inner);
+        if !self.inner.is_null() {
+            dbg!("uri drop start");
+            unsafe {
+                bindings::mongoc_uri_destroy(dbg!(self.inner));
+            }
+            self.inner = ptr::null_mut();
+            dbg!("uri drop done");
         }
-        self.inner = ptr::null_mut();
     }
 
     /// Fetches the authMechanism parameter to an URI if provided.

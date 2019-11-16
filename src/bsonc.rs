@@ -16,13 +16,12 @@ impl Bsonc {
         Bsonc::from_ptr(unsafe { bindings::bson_new() })
     }
     pub fn empty() -> Bsonc {
-        Bsonc {
-            inner: ptr::null_mut(),
-        }
+        Bsonc::from_ptr(unsafe { bindings::bson_new() })
     }
 
-    pub fn from_ptr(inner: *mut bindings::bson_t) -> Bsonc {
-        assert!(!inner.is_null());
+    pub fn from_ptr(ptr: *const bindings::bson_t) -> Bsonc {
+        assert!(!ptr.is_null());
+        let inner = ptr as *mut bindings::bson_t;
         Bsonc { inner }
     }
 
@@ -93,13 +92,11 @@ impl Bsonc {
         out
     }
 
-    pub fn inner(&self) -> *const bindings::bson_t {
-        assert!(!self.inner.is_null());
+    pub fn as_ptr(&self) -> *const bindings::bson_t {
         self.inner
     }
 
-    pub fn mut_inner(&mut self) -> *mut bindings::bson_t {
-        assert!(!self.inner.is_null());
+    pub fn as_mut_ptr(&self) -> *mut bindings::bson_t {
         self.inner as *mut bindings::bson_t
     }
 }
@@ -112,9 +109,15 @@ impl fmt::Debug for Bsonc {
 
 impl Drop for Bsonc {
     fn drop(&mut self) {
-        unsafe {
-            bindings::bson_destroy(self.inner);
+        dbg!("Bsonc drop start");
+        if !self.inner.is_null() {
+            unsafe {
+                bindings::bson_destroy(self.inner);
+            }
+            dbg!(self.inner);
+            self.inner = ptr::null_mut();
         }
+        dbg!("Bsonc drop done");
     }
 }
 

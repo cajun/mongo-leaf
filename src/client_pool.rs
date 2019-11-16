@@ -16,17 +16,12 @@ pub trait ClientPool<'a> {
     type Uri: Uri + Sized;
     type Client: Client;
 
-    fn new(uri: Self::Uri) -> Self::Pool;
     fn destroy(&mut self);
     fn pop(&'a self) -> Self::Client;
     fn push(&self, client: &mut Self::Client);
 }
 
-impl<'a> ClientPool<'a> for ClientPoolc {
-    type Pool = ClientPoolc;
-    type Uri = Uric;
-    type Client = Clientc<'a>;
-
+impl ClientPoolc {
     /// From MongoC documentation:
     ///
     /// mongoc_client_pool_t is the basis for multi-threading in the MongoDB C driver. Since
@@ -36,14 +31,16 @@ impl<'a> ClientPool<'a> for ClientPoolc {
     /// called from one thread.
     ///
     /// # Examples
-    ///
     /// ```
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uric::new("mongodb://localhost/").unwrap();
-    /// let pool = ClientPoolc::new(uri);
+    /// # fn main() -> Result<()> {
+    /// let builder = Builder::new();
+    /// let pool = builder.connect()?;
+    /// # Ok(())
+    /// # }
     /// ```
-    fn new(uri: Self::Uri) -> Self::Pool {
+    pub fn new(uri: Uric) -> Self {
         crate::init();
         unsafe {
             let inner = bindings::mongoc_client_pool_new(uri.inner());
@@ -51,6 +48,12 @@ impl<'a> ClientPool<'a> for ClientPoolc {
             ClientPoolc { uri, inner }
         }
     }
+}
+
+impl<'a> ClientPool<'a> for ClientPoolc {
+    type Pool = ClientPoolc;
+    type Uri = Uric;
+    type Client = Clientc<'a>;
 
     /// From MongoC documentation:
     ///
@@ -64,9 +67,12 @@ impl<'a> ClientPool<'a> for ClientPoolc {
     /// ```
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uric::new("mongodb://localhost/").unwrap();
-    /// let mut pool = ClientPoolc::new(uri);
+    /// # fn main() -> Result<()> {
+    /// let builder = Builder::new();
+    /// let mut pool = builder.connect()?;
     /// pool.destroy();
+    /// # Ok(())
+    /// # }
     /// ```
     fn destroy(&mut self) {
         if !self.inner.is_null() {
@@ -89,13 +95,18 @@ impl<'a> ClientPool<'a> for ClientPoolc {
     /// ```
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uric::new("mongodb://localhost/").unwrap();
-    /// let pool = ClientPoolc::new(uri);
+    /// # fn main() -> Result<()> {
+    /// let builder = Builder::new();
+    /// let pool = builder.connect()?;
     /// let client = pool.pop();
     /// assert_eq!(*client.client_pool, pool);
+    /// # Ok(())
+    /// # }
     /// ```
     fn pop(&'a self) -> Self::Client {
-        unsafe { Clientc::new(self, bindings::mongoc_client_pool_pop(self.inner)) }
+        let clientc = unsafe { bindings::mongoc_client_pool_pop(self.inner) };
+
+        Clientc::new(self, clientc)
     }
 
     /// From MongoC documentation:
@@ -107,16 +118,19 @@ impl<'a> ClientPool<'a> for ClientPoolc {
     /// ```
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uric::new("mongodb://localhost/").unwrap();
-    /// let pool = ClientPoolc::new(uri);
+    /// # fn main() -> Result<()> {
+    /// let builder = Builder::new();
+    /// let pool = builder.connect()?;
     /// let mut client = pool.pop();
     /// assert_eq!(*client.client_pool, pool);
     /// pool.push(&mut client);
+    /// # Ok(())
+    /// # }
     /// ```
     fn push(&self, client: &mut Self::Client) {
         if !client.inner().is_null() {
             unsafe {
-                bindings::mongoc_client_pool_push(dbg!(self.inner), dbg!(client.inner()));
+                bindings::mongoc_client_pool_push(self.inner, client.inner());
             }
             client.destroy();
         }
@@ -125,7 +139,10 @@ impl<'a> ClientPool<'a> for ClientPoolc {
 
 impl Drop for ClientPoolc {
     fn drop(&mut self) {
+        dbg!("Client Pool drop start");
         self.destroy();
+        dbg!(self);
+        dbg!("Client Pool drop end");
     }
 }
 

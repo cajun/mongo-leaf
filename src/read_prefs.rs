@@ -18,14 +18,14 @@ pub enum ReadMode {
 }
 
 fn read_mode_value(read_mode: &ReadMode) -> bindings::mongoc_read_mode_t {
-    match read_mode {
-        &ReadMode::Primary => bindings::mongoc_read_mode_t_MONGOC_READ_PRIMARY,
-        &ReadMode::Secondary => bindings::mongoc_read_mode_t_MONGOC_READ_SECONDARY,
-        &ReadMode::PrimaryPreferred => bindings::mongoc_read_mode_t_MONGOC_READ_PRIMARY_PREFERRED,
-        &ReadMode::SecondaryPreferred => {
+    match *read_mode {
+        ReadMode::Primary => bindings::mongoc_read_mode_t_MONGOC_READ_PRIMARY,
+        ReadMode::Secondary => bindings::mongoc_read_mode_t_MONGOC_READ_SECONDARY,
+        ReadMode::PrimaryPreferred => bindings::mongoc_read_mode_t_MONGOC_READ_PRIMARY_PREFERRED,
+        ReadMode::SecondaryPreferred => {
             bindings::mongoc_read_mode_t_MONGOC_READ_SECONDARY_PREFERRED
         }
-        &ReadMode::Nearest => bindings::mongoc_read_mode_t_MONGOC_READ_NEAREST,
+        ReadMode::Nearest => bindings::mongoc_read_mode_t_MONGOC_READ_NEAREST,
     }
 }
 
@@ -42,7 +42,7 @@ impl Default for ReadPrefsc {
 
 pub trait ReadPrefs {
     fn new(read_mode: &ReadMode) -> Self;
-    fn inner(&self) -> *const bindings::mongoc_read_prefs_t {
+    fn as_ptr(&self) -> *const bindings::mongoc_read_prefs_t {
         ptr::null()
     }
 }
@@ -56,7 +56,7 @@ impl ReadPrefs for ReadPrefsc {
         ReadPrefsc { inner: inner }
     }
 
-    fn inner(&self) -> *const bindings::mongoc_read_prefs_t {
+    fn as_ptr(&self) -> *const bindings::mongoc_read_prefs_t {
         assert!(!self.inner.is_null());
         self.inner
     }
