@@ -48,7 +48,7 @@ fn lin(mongoc_version: &str) {
                 .expect("Could not run tar")
                 .success());
 
-            let dst = Config::new(&dbg!(driver_src_path))
+            let dst = Config::new(&driver_src_path)
                 .define("ENABLE_STATIC", "AUTO")
                 .define("ENABLE_AUTOMATIC_INIT_AND_CLEANUP", "OFF")
                 .define("CMAKE_BUILD_TYPE", "Release")
@@ -56,8 +56,6 @@ fn lin(mongoc_version: &str) {
 
             println!("cargo:rustc-link-search=native={}", dst.display());
         }
-
-        println!("!!!out {}", &out_dir);
 
         let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
 
