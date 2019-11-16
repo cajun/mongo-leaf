@@ -16,7 +16,7 @@ rust-latest:
   variables:
     MONGODB_URI: "mongodb://mongo/"
   script:
-    - cargo build
+    - cargo build -q
     - cargo test --verbose
 
 rust-nightly:
@@ -26,6 +26,6 @@ rust-nightly:
   variables:
     MONGODB_URI: "mongodb://mongo/"
   script:
-    - cargo build
+    - cargo build -q
     - cargo test --verbose
   allow_failure: true
