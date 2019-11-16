@@ -1,16 +1,28 @@
+image: rust:latest
+
+services:
+- name: mongo:latest
+
+
 stages:
   - build
 
 rust-latest:
+  when: manual
   stage: build
   image: rust:latest
+  variables:
+    MONGODB_URI: "mongodb://mongo/"
   script:
     - cargo build --verbose
     - cargo test --verbose
 
 rust-nightly:
+  when: manual
   stage: build
   image: rustlang/rust:nightly
+  variables:
+    MONGODB_URI: "mongodb://mongo/"
   script:
     - cargo build --verbose
     - cargo test --verbose

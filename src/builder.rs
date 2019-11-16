@@ -3,6 +3,8 @@ use crate::{
     error::Result,
     uri::{Uri, Uric},
 };
+use rand::prelude::*;
+use std::env;
 
 #[derive(Debug)]
 pub struct Builder {
@@ -11,9 +13,8 @@ pub struct Builder {
 
 impl Builder {
     pub fn new() -> Builder {
-        Builder {
-            uri: "mongodb://localhost/".to_string(),
-        }
+        let uri = env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost/".to_string());
+        Builder { uri }
     }
 }
 
