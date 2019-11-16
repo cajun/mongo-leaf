@@ -7,6 +7,7 @@ extern crate bson;
 
 use std::sync::Once;
 
+#[allow(dead_code)]
 mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }

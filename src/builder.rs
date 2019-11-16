@@ -11,10 +11,16 @@ pub struct Builder {
     uri: String,
 }
 
-impl Builder {
-    pub fn new() -> Builder {
+impl Default for Builder {
+    fn default() -> Builder {
         let uri = env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost/".to_string());
         Builder { uri }
+    }
+}
+
+impl Builder {
+    pub fn new() -> Builder {
+        Default::default()
     }
 }
 
@@ -52,7 +58,7 @@ impl<'a> Connect<'a> for Builder {
     }
 
     fn random_database_connect(&self) -> Result<Self::Pool> {
-        let mut uri = Uric::new(self.uri.clone())?;
+        let uri = Uric::new(self.uri.clone())?;
 
         let num: i32 = random();
         uri.set_database(format!("testing_{:?}", num));

@@ -394,10 +394,9 @@ impl Collection for Collectionc {
         read_prefs: Option<Self::ReadPrefs>,
     ) -> Self::Cursor {
         let bson_filter = Bsonc::from_document(&filter).expect("should be valid");
-        let bson_opts = opts.map_or_else(
-            || Bsonc::empty(),
-            |o| Bsonc::from_document(&o).expect("should be valid"),
-        );
+        let bson_opts = opts.map_or_else(Bsonc::empty, |o| {
+            Bsonc::from_document(&o).expect("should be valid")
+        });
 
         let ptr = unsafe {
             bindings::mongoc_collection_find_with_opts(

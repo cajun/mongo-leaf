@@ -53,7 +53,7 @@ impl ReadPrefs for ReadPrefsc {
         let read_mode_value = read_mode_value(read_mode);
         let inner = unsafe { bindings::mongoc_read_prefs_new(read_mode_value) };
         assert!(!inner.is_null());
-        ReadPrefsc { inner: inner }
+        ReadPrefsc { inner }
     }
 
     fn as_ptr(&self) -> *const bindings::mongoc_read_prefs_t {

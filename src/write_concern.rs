@@ -78,7 +78,7 @@ impl WriteConcern for WriteConcernc {
             }
         };
         assert!(!inner.is_null());
-        WriteConcernc { inner: inner }
+        WriteConcernc { inner }
     }
 
     fn as_ptr(&self) -> *const bindings::mongoc_write_concern_t {

@@ -12,9 +12,6 @@ pub struct Bsonc {
 }
 
 impl Bsonc {
-    pub fn new() -> Bsonc {
-        Bsonc::from_ptr(unsafe { bindings::bson_new() })
-    }
     pub fn empty() -> Bsonc {
         Bsonc::from_ptr(unsafe { bindings::bson_new() })
     }
@@ -37,7 +34,7 @@ impl Bsonc {
         // See: http://mongoc.org/libbson/current/bson_new_from_data.html
         assert!(!inner.is_null());
 
-        Ok(Bsonc { inner: inner })
+        Ok(Bsonc { inner })
     }
 
     /// Decode a bson from the C side to a document

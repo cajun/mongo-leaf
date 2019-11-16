@@ -1,7 +1,7 @@
 use crate::{
     bindings,
     bsonc::Bsonc,
-    error::{BsoncError, MongoError, Result},
+    error::{BsoncError, Result},
     host::{Host, Hostc},
 };
 use std::ptr;

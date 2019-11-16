@@ -8,12 +8,7 @@ use crate::{
     error::{BsoncError, Result},
     read_prefs::{ReadPrefs, ReadPrefsc},
 };
-use std::borrow::Cow;
-use std::ffi::{CStr, CString};
-use std::fmt;
-use std::io;
-use std::mem;
-use std::path::PathBuf;
+use std::ffi::CString;
 use std::ptr;
 
 #[derive(Debug)]

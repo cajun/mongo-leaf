@@ -14,7 +14,7 @@ pub type Result<T> = std::result::Result<T, MongoError>;
 /// Wrapper for all errors that can occur in the driver.
 pub enum MongoError {
     /// Error in the underlying C driver.
-    Bsonc(BsoncError),
+    Bsonc(Box<BsoncError>),
     /// Error decoding Bson.
     Decoder(DecoderError),
     /// Error encoding Bson.
@@ -348,7 +348,7 @@ impl error::Error for BsoncError {
 
 impl From<BsoncError> for MongoError {
     fn from(error: BsoncError) -> MongoError {
-        MongoError::Bsonc(error)
+        MongoError::Bsonc(Box::new(error))
     }
 }
 

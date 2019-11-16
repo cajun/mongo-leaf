@@ -1,7 +1,6 @@
 //! Abstraction on top of the MongoDB connection read prefences.
 
 use crate::bindings;
-use std::ptr;
 
 /// Describes how reads should be dispatched.
 pub enum InsertFlag {
@@ -39,6 +38,6 @@ impl InsertFlags for InsertFlagsc {
     /// Create a new empty insert flag.
     fn new(flag: &InsertFlag) -> Self {
         let inner = flag_value(flag);
-        InsertFlagsc { inner: inner }
+        InsertFlagsc { inner }
     }
 }
