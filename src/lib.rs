@@ -20,9 +20,11 @@ mod cursor;
 mod database;
 mod error;
 mod host;
+mod insert_flags;
 pub mod prelude;
 mod read_prefs;
 mod uri;
+mod write_concern;
 
 static MONGOC_INIT: Once = Once::new();
 

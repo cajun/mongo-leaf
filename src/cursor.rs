@@ -45,7 +45,7 @@ impl Cursor for Cursorc {
         assert!(!self.inner.is_null());
 
         unsafe {
-            let mut ptr = ptr::null_mut();
+            let ptr = ptr::null_mut();
             bindings::mongoc_cursor_get_host(self.inner, ptr);
             if ptr.is_null() {
                 None
