@@ -17,7 +17,7 @@ pub trait Uri {
     type Inner: Uri + Sized;
     type Host: Host;
 
-    fn inner(&self) -> *mut bindings::mongoc_uri_t {
+    fn as_mut_ptr(&self) -> *mut bindings::mongoc_uri_t {
         ptr::null_mut()
     }
     fn new(uri_string: impl Into<String>) -> Result<Self::Inner>;
@@ -29,13 +29,14 @@ pub trait Uri {
     fn get_compressors(&self) -> Option<bson::Document>;
     fn get_hosts(&self) -> Option<Vec<Self::Host>>;
     fn as_str(&self) -> Cow<str>;
+    fn set_database(&self, db_name: impl Into<String>) -> bool;
 }
 
 impl Uri for Uric {
     type Inner = Uric;
     type Host = Hostc;
 
-    fn inner(&self) -> *mut bindings::mongoc_uri_t {
+    fn as_mut_ptr(&self) -> *mut bindings::mongoc_uri_t {
         self.inner
     }
 
@@ -290,7 +291,7 @@ impl Uri for Uric {
         assert!(!self.inner.is_null());
 
         unsafe {
-            let mut ptr = bindings::mongoc_uri_get_compressors(self.inner) as *mut bindings::bson_t;
+            let ptr = bindings::mongoc_uri_get_compressors(self.inner) as *mut bindings::bson_t;
             if ptr.is_null() {
                 None
             } else {
@@ -298,6 +299,11 @@ impl Uri for Uric {
                 bson.as_document().ok()
             }
         }
+    }
+
+    fn set_database(&self, db_name: impl Into<String>) -> bool {
+        let db_cstring = CString::new(db_name.into()).expect("Valid database name");
+        unsafe { bindings::mongoc_uri_set_database(self.inner, db_cstring.as_ptr()) }
     }
 
     fn as_str(&self) -> Cow<str> {

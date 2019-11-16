@@ -9,6 +9,7 @@ build = "build.rs"
 libc        = "0.2"
 openssl-sys = { version = "0.9", features = ["vendored"] }
 bson = "0.14.0"
+rand = "0.7.2"
 
 [build-dependencies]
 bindgen = "0.51.1"

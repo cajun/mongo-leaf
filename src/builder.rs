@@ -3,6 +3,7 @@ use crate::{
     error::Result,
     uri::{Uri, Uric},
 };
+use rand::prelude::*;
 
 #[derive(Debug)]
 pub struct Builder {
@@ -28,6 +29,7 @@ pub trait Connect<'a> {
     type Pool: ClientPool<'a>;
 
     fn connect(&self) -> Result<Self::Pool>;
+    fn random_database_connect(&self) -> Result<Self::Pool>;
 }
 
 impl<'a> ConstructUri<'a> for Builder {
@@ -46,6 +48,15 @@ impl<'a> Connect<'a> for Builder {
 
     fn connect(&self) -> Result<Self::Pool> {
         let uri = Uric::new(self.uri.clone())?;
+        Ok(ClientPoolc::new(uri))
+    }
+
+    fn random_database_connect(&self) -> Result<Self::Pool> {
+        let mut uri = Uric::new(self.uri.clone())?;
+
+        let num: i32 = random();
+        uri.set_database(format!("testing_{:?}", num));
+
         Ok(ClientPoolc::new(uri))
     }
 }
