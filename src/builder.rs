@@ -66,11 +66,3 @@ impl<'a> Connect<'a> for Builder {
         Ok(ClientPoolc::new(uri))
     }
 }
-
-impl Drop for Builder {
-    fn drop(&mut self) {
-        dbg!("Builder start drop");
-        dbg!(self);
-        dbg!("Builder start done");
-    }
-}

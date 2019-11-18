@@ -7,6 +7,8 @@ use crate::{
     database::{Database, Databasec},
     error::{BsoncError, Result},
     read_prefs::{ReadPrefs, ReadPrefsc},
+    session::{Session, Sessionc},
+    session_opts::{SessionOpts, SessionOptsc},
 };
 use std::ffi::CString;
 use std::ptr;
@@ -22,6 +24,8 @@ pub trait Client {
     type Collection: Collection;
     type ReadPrefs: ReadPrefs + Sized + Default;
     type Database: Database;
+    type Session: Session;
+    type SessionOpts: SessionOpts + Sized + Default;
 
     fn as_mut_ptr(&self) -> *mut bindings::mongoc_client_t {
         ptr::null_mut()
@@ -50,6 +54,8 @@ pub trait Client {
         db_name: impl Into<String>,
         collection_name: impl Into<String>,
     ) -> Self::Collection;
+
+    fn start_session(&self, opts: Option<Self::SessionOpts>) -> Result<Self::Session>;
 }
 
 impl<'a> Clientc<'a> {
@@ -63,6 +69,8 @@ impl Client for Clientc<'_> {
     type Cursor = Cursorc;
     type Collection = Collectionc;
     type Database = Databasec;
+    type Session = Sessionc;
+    type SessionOpts = SessionOptsc;
 
     fn as_mut_ptr(&self) -> *mut bindings::mongoc_client_t {
         self.inner
@@ -232,16 +240,70 @@ impl Client for Clientc<'_> {
     fn destroy(&mut self) {
         self.inner = ptr::null_mut();
     }
+
+    /// Start a session and try a transaction
+    ///
+    /// # Examples
+    /// ```no_run
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongoc_to_rs_sys::prelude::*;
+    ///
+    /// # fn main() -> Result<()> {
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    /// let db = client.default_database();
+    /// let session = client.start_session(None)?;
+    ///
+    /// let reply = session.start_transaction(None)?;
+    /// assert!(reply);
+    ///
+    /// let collection = db.get_collection("with_txn");
+    ///
+    /// let reply = collection.insert_many(vec![
+    ///     doc!{"name": "first"},
+    ///     doc!{"name": "second"},
+    ///     doc!{"name": "third"},
+    ///     doc!{"name": "fourth"},
+    /// ])?;
+    ///
+    /// let count = collection.count(None, None, None)?;
+    /// assert_eq!(4, count, "In Transaction");
+    ///
+    /// let reply = session.abort()?;
+    /// assert!(reply);
+    ///
+    /// let count = collection.count(None, None, None)?;
+    /// assert_eq!(0, count, "Transaction Aborted");
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn start_session(&self, opts: Option<Self::SessionOpts>) -> Result<Self::Session> {
+        let mut error = BsoncError::empty();
+        let ptr = unsafe {
+            bindings::mongoc_client_start_session(
+                self.inner,
+                opts.unwrap_or_default().as_mut_ptr(),
+                error.as_mut_ptr(),
+            )
+        };
+
+        if error.is_empty() {
+            Ok(Sessionc::from_ptr(ptr))
+        } else {
+            Err(error.into())
+        }
+    }
 }
 
 impl<'a> Drop for Clientc<'a> {
     fn drop(&mut self) {
-        dbg!("Client drop start");
         if !self.inner.is_null() {
             self.client_pool.push(self);
             self.destroy();
-            dbg!(self);
         }
-        dbg!("Client drop done");
     }
 }

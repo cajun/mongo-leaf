@@ -67,14 +67,11 @@ impl Database for Databasec {
 
 impl Drop for Databasec {
     fn drop(&mut self) {
-        dbg!("Database drop start");
         if !self.inner.is_null() {
             unsafe {
                 bindings::mongoc_database_destroy(self.inner);
             }
             self.inner = ptr::null_mut();
-            dbg!(self);
         }
-        dbg!("Database drop done");
     }
 }

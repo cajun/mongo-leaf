@@ -24,8 +24,12 @@ mod host;
 mod insert_flags;
 pub mod prelude;
 mod read_prefs;
+mod session;
+mod session_opts;
+mod transaction_opts;
 mod uri;
 mod write_concern;
+//mod write_opts;
 
 static MONGOC_INIT: Once = Once::new();
 

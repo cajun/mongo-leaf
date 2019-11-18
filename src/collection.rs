@@ -446,14 +446,11 @@ impl Collection for Collectionc {
 
 impl Drop for Collectionc {
     fn drop(&mut self) {
-        dbg!("Collection drop start");
         if !self.inner.is_null() {
             unsafe {
                 bindings::mongoc_collection_destroy(self.inner);
             };
             self.inner = ptr::null_mut();
-            dbg!(self);
         }
-        dbg!("Collection drop done");
     }
 }

@@ -106,15 +106,12 @@ impl fmt::Debug for Bsonc {
 
 impl Drop for Bsonc {
     fn drop(&mut self) {
-        dbg!("Bsonc drop start");
         if !self.inner.is_null() {
             unsafe {
                 bindings::bson_destroy(self.inner);
             }
-            dbg!(self.inner);
             self.inner = ptr::null_mut();
         }
-        dbg!("Bsonc drop done");
     }
 }
 

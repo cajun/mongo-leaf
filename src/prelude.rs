@@ -10,5 +10,6 @@ pub use crate::{
     },
     host::Host,
     read_prefs::{ReadMode, ReadPrefs},
+    session::Session,
     uri::{Uri, Uric},
 };

@@ -206,12 +206,10 @@ impl Uri for Uric {
     /// ```
     fn destroy(&mut self) {
         if !self.inner.is_null() {
-            dbg!("uri drop start");
             unsafe {
-                bindings::mongoc_uri_destroy(dbg!(self.inner));
+                bindings::mongoc_uri_destroy(self.inner);
             }
             self.inner = ptr::null_mut();
-            dbg!("uri drop done");
         }
     }
 
@@ -280,10 +278,10 @@ impl Uri for Uric {
     /// # fn main() {
     /// use mongoc_to_rs_sys::prelude::*;
     ///
-    /// let uri = Uric::new("mongodb://localhost:27017/?compressors=zlib,zstd").unwrap();
+    /// let uri = Uric::new("mongodb://localhost:27017/?compressors=zlib").unwrap();
     /// assert_eq!(
     ///     uri.get_compressors(),
-    ///     Some(doc! {"zlib": "yes", "zstd": "yes"})
+    ///     Some(doc! {"zlib": "yes"})
     /// );
     /// # }
     /// ```

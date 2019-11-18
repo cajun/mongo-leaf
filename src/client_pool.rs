@@ -139,10 +139,7 @@ impl<'a> ClientPool<'a> for ClientPoolc {
 
 impl Drop for ClientPoolc {
     fn drop(&mut self) {
-        dbg!("Client Pool drop start");
         self.destroy();
-        dbg!(self);
-        dbg!("Client Pool drop end");
     }
 }
 
