@@ -1,6 +1,7 @@
 use crate::{
     bindings,
     bsonc::Bsonc,
+    change_stream::{ChangeStream, ChangeStreamc},
     cursor::{Cursor, Cursorc},
     error::{BsoncError, Result},
     insert_flags::{InsertFlags, InsertFlagsc},
@@ -20,6 +21,7 @@ pub trait Collection {
     type ReadPrefs: ReadPrefs + Sized;
     type WriteConcern: WriteConcern + Sized;
     type Cursor: Cursor;
+    type ChangeStream: ChangeStream;
 
     fn count(
         &self,
@@ -65,6 +67,12 @@ pub trait Collection {
     ) -> Self::Cursor;
 
     fn destroy(&self) -> Result<bool>;
+
+    fn watch(
+        &self,
+        pipeline: Option<bson::Document>,
+        opts: Option<bson::Document>,
+    ) -> Self::ChangeStream;
 }
 
 impl Collectionc {
@@ -78,6 +86,7 @@ impl Collection for Collectionc {
     type ReadPrefs = ReadPrefsc;
     type WriteConcern = WriteConcernc;
     type Cursor = Cursorc;
+    type ChangeStream = ChangeStreamc;
 
     /// Counts the number of documents in a collection.
     ///
@@ -441,6 +450,64 @@ impl Collection for Collectionc {
         } else {
             Err(error.into())
         }
+    }
+
+    /// Watches collection
+    ///
+    /// TODO: Add docs
+    /// NOTE:  Need to setup repl for this to work.  I have not tested with a repl
+    /// # Examples
+    /// ```no_run
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongoc_to_rs_sys::prelude::*;
+    ///
+    /// # fn main() -> Result<()> {
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("changing");
+    /// let stream = collection.watch(None, None);
+    ///
+    /// let docs = vec![
+    ///     doc!{"name": "first"},
+    ///     doc!{"name": "second"},
+    ///     doc!{"name": "third"},
+    ///     doc!{"name": "fourth"},
+    /// ];
+    /// let result = collection.insert_many(docs)?;
+    ///
+    /// let maybe: Result<Vec<bson::Document>> = stream.collect();
+    /// assert!(maybe.is_ok(), "Has error");
+    ///
+    /// let results = maybe.unwrap();
+    /// assert_eq!(4, results.len());
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn watch(
+        &self,
+        pipeline: Option<bson::Document>,
+        opts: Option<bson::Document>,
+    ) -> Self::ChangeStream {
+        let bson_pipeline = pipeline.map_or_else(Bsonc::empty, |o| {
+            Bsonc::from_document(&o).expect("should be valid")
+        });
+        let empty = Bsonc::empty();
+
+        let inner = unsafe {
+            bindings::mongoc_collection_watch(
+                self.inner,
+                bson_pipeline.as_mut_ptr(),
+                empty.as_mut_ptr(),
+            )
+        };
+
+        ChangeStreamc::from_ptr(inner)
     }
 }
 

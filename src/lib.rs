@@ -14,6 +14,7 @@ mod bindings {
 
 mod bsonc;
 pub mod builder;
+mod change_stream;
 mod client;
 mod client_pool;
 mod collection;

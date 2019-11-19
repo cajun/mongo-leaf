@@ -90,7 +90,7 @@ impl Bsonc {
     }
 
     pub fn as_ptr(&self) -> *const bindings::bson_t {
-        self.inner
+        self.inner as *const bindings::bson_t
     }
 
     pub fn as_mut_ptr(&self) -> *mut bindings::bson_t {
