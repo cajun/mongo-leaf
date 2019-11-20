@@ -72,7 +72,7 @@ pub trait Collection {
         &self,
         pipeline: Option<bson::Document>,
         opts: Option<bson::Document>,
-    ) -> Self::ChangeStream;
+    ) -> Result<Self::ChangeStream>;
 }
 
 impl Collectionc {
@@ -469,7 +469,7 @@ impl Collection for Collectionc {
     ///
     /// let db = client.default_database();
     /// let collection = db.get_collection("changing");
-    /// let stream = collection.watch(None, None);
+    /// let stream = collection.watch(None, None)?;
     ///
     /// let docs = vec![
     ///     doc!{"name": "first"},
@@ -493,7 +493,7 @@ impl Collection for Collectionc {
         &self,
         pipeline: Option<bson::Document>,
         opts: Option<bson::Document>,
-    ) -> Self::ChangeStream {
+    ) -> Result<Self::ChangeStream> {
         let bson_pipeline = pipeline.map_or_else(Bsonc::empty, |o| {
             Bsonc::from_document(&o).expect("should be valid")
         });
@@ -507,7 +507,13 @@ impl Collection for Collectionc {
             )
         };
 
-        ChangeStreamc::from_ptr(inner)
+        let change_stream = ChangeStreamc::from_ptr(inner);
+
+        if let Some(error) = change_stream.get_error() {
+            return Err(error.into());
+        }
+
+        Ok(change_stream)
     }
 }
 
