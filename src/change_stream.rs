@@ -23,12 +23,16 @@ impl ChangeStreamc {
         let mut error = BsoncError::empty();
         let reply = Bsonc::empty();
 
-        unsafe {
+        let has_c_error = unsafe {
             bindings::mongoc_change_stream_error_document(
                 self.inner,
                 error.as_mut_ptr(),
-                reply.as_ptr() as *mut *const bindings::bson_t,
-            );
+                &mut reply.as_ptr(),
+            )
+        };
+
+        if !has_c_error {
+            return None;
         }
 
         if error.is_empty() {
