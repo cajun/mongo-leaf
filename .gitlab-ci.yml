@@ -4,12 +4,23 @@ variables:
   DEPLOY_IMAGE: $CI_REGISTRY_IMAGE:$CI_BUILD_TAG
 
 services:
-- name: mongo:latest
-  alias: standard
-  command: ["mongod", "--storageEngine", "ephemeralForTest", "--dbpath", "/data/db"]
-- name: mongo:latest
-  alias: repl
-  command: ["mongod", "--replSet", "rs0", "--enableMajorityReadConcern", "--storageEngine", "ephemeralForTest" "--dbpath" "/data/db"]
+  - name: mongo:latest
+    alias: standard
+    command:
+      ["mongod", "--storageEngine", "ephemeralForTest", "--dbpath", "/data/db"]
+  - name: mongo:latest
+    alias: repl
+    command:
+      [
+        "mongod",
+        "--replSet",
+        "rs0",
+        "--enableMajorityReadConcern",
+        "--storageEngine",
+        "ephemeralForTest",
+        "--dbpath",
+        "/data/db",
+      ]
 
 stages:
   - .pre
