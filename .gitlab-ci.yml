@@ -37,7 +37,6 @@ init_repl:
 create_build_image:
   stage: build
   image: docker:17.10
-  tags: [rust]
   before_script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
@@ -48,7 +47,6 @@ create_build_image:
 create_nightly_image:
   stage: build
   image: docker:17.10
-  tags: [rust]
   before_script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
@@ -59,7 +57,6 @@ create_nightly_image:
 clippy:
   stage: clippy
   image: $BUILD_IMAGE
-  tags: [rust]
   before_script:
     - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
     - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
@@ -72,7 +69,6 @@ clippy:
 test:
   stage: test
   image: $BUILD_IMAGE
-  tags: [rust]
   before_script:
     - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
     - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
@@ -85,7 +81,6 @@ test:
 test_nightly:
   stage: test
   image: $NIGHTLY_IMAGE
-  tags: [rust]
   before_script:
     - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
     - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
