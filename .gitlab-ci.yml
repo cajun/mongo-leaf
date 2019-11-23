@@ -1,42 +1,39 @@
 variables:
   BUILD_IMAGE: $CI_REGISTRY_IMAGE/build:$CI_COMMIT_REF_SLUG
   NIGHTLY_IMAGE: $CI_REGISTRY_IMAGE/nightly:$CI_COMMIT_REF_SLUG
-  DEPLOY_IMAGE: $CI_REGISTRY_IMAGE:$CI_BUILD_TAG
-  # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
-  DOCKER_HOST: tcp://docker:2376
-  DOCKER_TLS_CERTDIR: "/certs"
 
 stages:
   - build
   - clippy
   - test
 
-create_build_image:
+docker-build-master:
+  # Official docker image.
+  image: docker:latest
   stage: build
-  image: docker:19.03.1-dind
-  tags: [docker]
-  before_script:
-    - docker info
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-  script:
-    - docker build --pull -t $BUILD_IMAGE -f Dockerfile .
-    - docker push $BUILD_IMAGE
-    - echo "Pushed $BUILD_IMAGE"
-
-create_nightly_image:
-  stage: build
-  image: docker:19.03.1-dind
-  tags: [docker]
   services:
-    - name: $CI_REGISTRY/group/project/docker:19.03.1-dind
-      alias: docker
+    - docker:dind
   before_script:
-    - docker info
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
-    - docker build -q --pull -t $NIGHTLY_IMAGE -f Dockerfile.nightly .
-    - docker push $NIGHTLY_IMAGE
-    - echo "Pushed $NIGHTLY_IMAGE"
+    - docker build --pull -t "$BUILD_IMAGE" .
+    - docker push "$BUILD_IMAGE"
+  only:
+    - master
+
+docker-build-nightly:
+  # Official docker image.
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+    - docker build --pull -t "$NIGHTLY_IMAGE" -f Dockerfile.nightly .
+    - docker push "$NIGHTLY_IMAGE"
+  only:
+    - master
 
 clippy:
   stage: clippy
