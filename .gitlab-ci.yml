@@ -36,7 +36,7 @@ init_repl:
 
 create_build_image:
   stage: build
-  image: docker:19.03.1
+  image: docker:19.03.1-dind
   tags: [docker]
   before_script:
     - docker info
@@ -48,7 +48,7 @@ create_build_image:
 
 create_nightly_image:
   stage: build
-  image: docker:19.03.1
+  image: docker:19.03.1-dind
   tags: [docker]
   services:
     - name: $CI_REGISTRY/group/project/docker:19.03.1-dind
