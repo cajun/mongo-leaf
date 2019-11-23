@@ -44,7 +44,7 @@ impl Session for Sessionc {
             )
         };
 
-        if error.is_empty() {
+        if success {
             Ok(success)
         } else {
             Err(error.into())
@@ -63,7 +63,7 @@ impl Session for Sessionc {
             )
         };
 
-        if error.is_empty() {
+        if success {
             reply.as_document()
         } else {
             Err(error.into())
@@ -77,7 +77,7 @@ impl Session for Sessionc {
             bindings::mongoc_client_session_abort_transaction(self.inner, error.as_mut_ptr())
         };
 
-        if error.is_empty() {
+        if success {
             Ok(success)
         } else {
             Err(error.into())

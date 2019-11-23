@@ -1,31 +1,85 @@
-image: rust:latest
+variables:
+  BUILD_IMAGE: $CI_REGISTRY_IMAGE/build:$CI_COMMIT_REF_SLUG
+  NIGHTLY_IMAGE: $CI_REGISTRY_IMAGE/nightly:$CI_COMMIT_REF_SLUG
+  DEPLOY_IMAGE: $CI_REGISTRY_IMAGE:$CI_BUILD_TAG
 
 services:
 - name: mongo:latest
-
-before_script:
-  - apt update && apt install -y cmake libssl-dev clang > apt-build.log 2>&1
+  alias: standard
+  command: ["mongod", "--storageEngine", "ephemeralForTest", "--dbpath", "/data/db"]
+- name: mongo:latest
+  alias: repl
+  command: ["mongod", "--replSet", "rs0", "--enableMajorityReadConcern", "--storageEngine", "ephemeralForTest" "--dbpath" "/data/db"]
 
 stages:
+  - .pre
   - build
+  - clippy
+  - test
 
-rust-latest:
-  when: manual
-  stage: build
-  image: rust:latest
-  variables:
-    MONGODB_URI: "mongodb://mongo/"
+init_repl:
+  stage: .pre
+  image: mongo:latest
   script:
-    - cargo build > build.log 2>&1
-    - cargo test -q --doc
+    - mongo --host repl --eval 'rs.initiate();'
 
-rust-nightly:
-  when: manual
+create_build_image:
   stage: build
-  image: rustlang/rust:nightly
-  variables:
-    MONGODB_URI: "mongodb://mongo/"
+  image: docker:17.10
+  tags: [rust]
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
-    - cargo build > build.log 2>&1
-    - cargo test -q --doc
-  allow_failure: true
+    - docker build -q --pull -t $BUILD_IMAGE -f Dockerfile .
+    - docker push $BUILD_IMAGE
+    - echo "Pushed $BUILD_IMAGE"
+
+create_nightly_image:
+  stage: build
+  image: docker:17.10
+  tags: [rust]
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - docker build -q --pull -t $NIGHTLY_IMAGE -f Dockerfile.nightly .
+    - docker push $NIGHTLY_IMAGE
+    - echo "Pushed $NIGHTLY_IMAGE"
+
+clippy:
+  stage: clippy
+  image: $BUILD_IMAGE
+  tags: [rust]
+  before_script:
+    - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
+    - rm -fr target && mkdir -p /cache/$CI_COMMIT_REF_SLUG/target && ln -s /cache/$CI_COMMIT_REF_SLUG/target target
+    - source ~/.cargo/env
+    - rustc --version
+  script:
+    - RUSTFLAGS="-D warnings" CARGO_INCREMENTAL=1 RUST_BACKTRACE=1 cargo clippy
+
+test:
+  stage: test
+  image: $BUILD_IMAGE
+  tags: [rust]
+  before_script:
+    - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
+    - rm -fr target && mkdir -p /cache/$CI_COMMIT_REF_SLUG/target && ln -s /cache/$CI_COMMIT_REF_SLUG/target target
+    - source ~/.cargo/env
+    - rustc --version
+  script:
+    - RUSTFLAGS="-D warnings" CARGO_INCREMENTAL=1 RUST_BACKTRACE=1 cargo test -- --nocapture
+
+test_nightly:
+  stage: test
+  image: $NIGHTLY_IMAGE
+  tags: [rust]
+  before_script:
+    - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
+    - rm -fr target && mkdir -p /cache/$CI_COMMIT_REF_SLUG/target && ln -s /cache/$CI_COMMIT_REF_SLUG/target target
+    - source ~/.cargo/env
+    - rustc --version
+  script:
+    - RUSTFLAGS="-D warnings" CARGO_INCREMENTAL=1 RUST_BACKTRACE=1 cargo test -- --nocapture

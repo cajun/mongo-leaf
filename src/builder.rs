@@ -58,7 +58,7 @@ impl<'a> Connect<'a> for Builder {
     }
 
     fn random_database_connect(&self) -> Result<Self::Pool> {
-        let uri = Uric::new(self.uri.clone())?;
+        let uri = Uric::new(dbg!(&self.uri).clone())?;
 
         let num: i32 = random();
         uri.set_database(format!("testing_{:?}", num));

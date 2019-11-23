@@ -1,0 +1,15 @@
+[tasks.up]
+script = [ "docker-compose up -d" ]
+
+[tasks.down]
+script = [ "docker-compose down" ]
+
+[tasks.logs]
+script = [
+  '''
+  multitail -s 3 -o beep_method:popup \
+  -cT ansi -l 'docker-compose logs -f lib' \
+  -cT ansi -l 'docker-compose logs -f clippy' \
+  -cT ansi -l 'docker-compose logs -f nightly' \
+  '''
+]

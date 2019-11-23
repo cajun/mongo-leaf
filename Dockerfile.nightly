@@ -1,0 +1,14 @@
+FROM rustlang/rust:nightly
+
+RUN apt-get update && \
+  apt-get install -y cmake libssl-dev clang && \
+  apt-get auto-remove && \
+  apt-get auto-clean
+
+RUN cargo install cargo-watch
+
+WORKDIR /app
+COPY . .
+RUN cargo build
+
+CMD cargo watch -x 'test -q'

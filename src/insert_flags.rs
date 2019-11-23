@@ -20,7 +20,7 @@ fn flag_value(flags: &InsertFlag) -> bindings::mongoc_insert_flags_t {
 }
 
 pub struct InsertFlagsc {
-    inner: u32,
+    _inner: u32,
 }
 
 impl Default for InsertFlagsc {
@@ -37,7 +37,7 @@ pub trait InsertFlags {
 impl InsertFlags for InsertFlagsc {
     /// Create a new empty insert flag.
     fn new(flag: &InsertFlag) -> Self {
-        let inner = flag_value(flag);
-        InsertFlagsc { inner }
+        let _inner = flag_value(flag);
+        InsertFlagsc { _inner }
     }
 }

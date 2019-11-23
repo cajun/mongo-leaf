@@ -9,6 +9,7 @@ use std::sync::Once;
 
 #[allow(dead_code)]
 mod bindings {
+    #![allow(clippy::all)]
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 

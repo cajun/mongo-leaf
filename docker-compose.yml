@@ -1,0 +1,38 @@
+version: "3.7"
+services:
+  lib:
+    build: .
+    volumes:
+      - /app/target
+      - ./:/app
+    depends_on:
+      - standard
+      - repl
+  clippy:
+    build: .
+    command: cargo watch -x 'clippy'
+    volumes:
+      - /app/target
+      - ./:/app
+  nightly:
+    build:
+      context: .
+      dockerfile: Dockerfile.nightly
+    volumes:
+      - /app/target
+      - ./:/app
+    depends_on:
+      - standard
+      - repl
+  standard:
+    image: mongo:latest
+    command: mongod --storageEngine ephemeralForTest --dbpath /data/db
+    volumes:
+      - /data/db
+  repl:
+    image: mongo:latest
+    command: mongod --replSet rs0 --enableMajorityReadConcern --storageEngine ephemeralForTest --dbpath /data/db
+    volumes:
+      - /data/db
+      - ./init-db.js:/docker-entrypoint-initdb.d/init-db.js
+

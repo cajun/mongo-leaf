@@ -107,9 +107,12 @@ impl Collection for Collectionc {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
-    /// # use std::panic;
+    /// use std::env;
+    ///
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    ///
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();
@@ -161,8 +164,10 @@ impl Collection for Collectionc {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();
@@ -208,8 +213,11 @@ impl Collection for Collectionc {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    /// let builder = Builder::new();
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();
@@ -268,8 +276,10 @@ impl Collection for Collectionc {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();
@@ -319,8 +329,10 @@ impl Collection for Collectionc {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();
@@ -371,8 +383,10 @@ impl Collection for Collectionc {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();
@@ -427,8 +441,10 @@ impl Collection for Collectionc {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();
@@ -461,8 +477,10 @@ impl Collection for Collectionc {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://repl/?replicaSet=rs0");
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();
@@ -492,7 +510,7 @@ impl Collection for Collectionc {
     fn watch(
         &self,
         pipeline: Option<bson::Document>,
-        opts: Option<bson::Document>,
+        _opts: Option<bson::Document>,
     ) -> Result<Self::ChangeStream> {
         let bson_pipeline = pipeline.map_or_else(Bsonc::empty, |o| {
             Bsonc::from_document(&o).expect("should be valid")

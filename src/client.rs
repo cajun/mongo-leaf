@@ -83,8 +83,10 @@ impl Client for Clientc<'_> {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard/");
     /// let builder = Builder::new();
     /// let pool = builder.connect()?;
     /// let mut client = pool.pop();
@@ -132,8 +134,10 @@ impl Client for Clientc<'_> {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard/");
     /// let builder = Builder::new();
     /// let pool = builder.connect()?;
     /// let mut client = pool.pop();
@@ -193,8 +197,10 @@ impl Client for Clientc<'_> {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard/");
     /// let builder = Builder::new();
     /// let pool = builder.connect()?;
     /// let mut client = pool.pop();
@@ -248,8 +254,10 @@ impl Client for Clientc<'_> {
     /// #[macro_use]
     /// extern crate bson;
     /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
     ///
     /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard/");
     /// let builder = Builder::new();
     /// let pool = builder.random_database_connect()?;
     /// let mut client = pool.pop();

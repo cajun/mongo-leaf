@@ -65,7 +65,7 @@ impl error::Error for MongoError {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             MongoError::Bsonc(ref err) => Some(err),
             MongoError::Decoder(ref err) => Some(err),
@@ -124,6 +124,10 @@ pub enum MongoErrorDomain {
     Collection,
     Gridfs,
     Scram,
+    ServerSelection,
+    WriteConcern,
+    Server,
+    Transaction,
     Unknown,
 }
 
@@ -164,6 +168,19 @@ pub enum MongoErrorCode {
     QueryNotTailable,
     WriteConcernError,
     DuplicateKey,
+    ServerSelectionBadWireVersion,
+    ServerSelectionFailure,
+    ServerSelectionInvalidId,
+    GridfsChunkMissing,
+    GridfsProtocolError,
+    ProtocolError,
+    MaxTimeMsExpired,
+    ChangeStreamNoResumeToken,
+    ClientSessionFailure,
+    TransactionInvalidState,
+    GridfsCorrupt,
+    GridfsBucketFileNotFound,
+    GridfsBucketFtream,
     Unknown(u32),
 }
 
@@ -201,6 +218,16 @@ impl BsoncError {
             bindings::mongoc_error_domain_t_MONGOC_ERROR_COLLECTION => MongoErrorDomain::Collection,
             bindings::mongoc_error_domain_t_MONGOC_ERROR_GRIDFS => MongoErrorDomain::Gridfs,
             bindings::mongoc_error_domain_t_MONGOC_ERROR_SCRAM => MongoErrorDomain::Scram,
+            bindings::mongoc_error_domain_t_MONGOC_ERROR_SERVER_SELECTION => {
+                MongoErrorDomain::ServerSelection
+            }
+            bindings::mongoc_error_domain_t_MONGOC_ERROR_WRITE_CONCERN => {
+                MongoErrorDomain::WriteConcern
+            }
+            bindings::mongoc_error_domain_t_MONGOC_ERROR_SERVER => MongoErrorDomain::Server,
+            bindings::mongoc_error_domain_t_MONGOC_ERROR_TRANSACTION => {
+                MongoErrorDomain::Transaction
+            }
             _ => MongoErrorDomain::Unknown,
         }
     }
@@ -306,6 +333,47 @@ impl BsoncError {
             bindings::mongoc_error_code_t_MONGOC_ERROR_DUPLICATE_KEY => {
                 MongoErrorCode::DuplicateKey
             }
+
+            bindings::mongoc_error_code_t_MONGOC_ERROR_SERVER_SELECTION_BAD_WIRE_VERSION => {
+                MongoErrorCode::ServerSelectionBadWireVersion
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_SERVER_SELECTION_FAILURE => {
+                MongoErrorCode::ServerSelectionFailure
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_SERVER_SELECTION_INVALID_ID => {
+                MongoErrorCode::ServerSelectionInvalidId
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_GRIDFS_CHUNK_MISSING => {
+                MongoErrorCode::GridfsChunkMissing
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_GRIDFS_PROTOCOL_ERROR => {
+                MongoErrorCode::GridfsProtocolError
+            }
+            //bindings::mongoc_error_code_t_MONGOC_ERROR_PROTOCOL_ERROR => {
+            //MongoErrorCode::ProtocolError
+            //}
+            bindings::mongoc_error_code_t_MONGOC_ERROR_MAX_TIME_MS_EXPIRED => {
+                MongoErrorCode::MaxTimeMsExpired
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_CHANGE_STREAM_NO_RESUME_TOKEN => {
+                MongoErrorCode::ChangeStreamNoResumeToken
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_CLIENT_SESSION_FAILURE => {
+                MongoErrorCode::ClientSessionFailure
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_TRANSACTION_INVALID_STATE => {
+                MongoErrorCode::TransactionInvalidState
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_GRIDFS_CORRUPT => {
+                MongoErrorCode::GridfsCorrupt
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_GRIDFS_BUCKET_FILE_NOT_FOUND => {
+                MongoErrorCode::GridfsBucketFileNotFound
+            }
+            bindings::mongoc_error_code_t_MONGOC_ERROR_GRIDFS_BUCKET_STREAM => {
+                MongoErrorCode::GridfsBucketFtream
+            }
+
             code => MongoErrorCode::Unknown(code),
         }
     }
