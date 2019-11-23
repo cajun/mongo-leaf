@@ -2,28 +2,11 @@ variables:
   BUILD_IMAGE: $CI_REGISTRY_IMAGE/build:$CI_COMMIT_REF_SLUG
   NIGHTLY_IMAGE: $CI_REGISTRY_IMAGE/nightly:$CI_COMMIT_REF_SLUG
   DEPLOY_IMAGE: $CI_REGISTRY_IMAGE:$CI_BUILD_TAG
-
-services:
-  - name: mongo:latest
-    alias: standard
-    command:
-      ["mongod", "--storageEngine", "ephemeralForTest", "--dbpath", "/data/db"]
-  - name: mongo:latest
-    alias: repl
-    command:
-      [
-        "mongod",
-        "--replSet",
-        "rs0",
-        "--enableMajorityReadConcern",
-        "--storageEngine",
-        "ephemeralForTest",
-        "--dbpath",
-        "/data/db",
-      ]
+  # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
 
 stages:
-  - .pre
   - build
   - clippy
   - test
@@ -76,6 +59,30 @@ clippy:
 test:
   stage: test
   image: $BUILD_IMAGE
+  services:
+    - name: mongo:latest
+      alias: standard
+      command:
+        [
+          "mongod",
+          "--storageEngine",
+          "ephemeralForTest",
+          "--dbpath",
+          "/data/db",
+        ]
+    - name: mongo:latest
+      alias: repl
+      command:
+        [
+          "mongod",
+          "--replSet",
+          "rs0",
+          "--enableMajorityReadConcern",
+          "--storageEngine",
+          "ephemeralForTest",
+          "--dbpath",
+          "/data/db",
+        ]
   before_script:
     - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
     - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
@@ -88,6 +95,30 @@ test:
 test_nightly:
   stage: test
   image: $NIGHTLY_IMAGE
+  services:
+    - name: mongo:latest
+      alias: standard
+      command:
+        [
+          "mongod",
+          "--storageEngine",
+          "ephemeralForTest",
+          "--dbpath",
+          "/data/db",
+        ]
+    - name: mongo:latest
+      alias: repl
+      command:
+        [
+          "mongod",
+          "--replSet",
+          "rs0",
+          "--enableMajorityReadConcern",
+          "--storageEngine",
+          "ephemeralForTest",
+          "--dbpath",
+          "/data/db",
+        ]
   before_script:
     - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
     - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
