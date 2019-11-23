@@ -11,12 +11,6 @@ stages:
   - clippy
   - test
 
-init_repl:
-  stage: .pre
-  image: mongo:latest
-  script:
-    - mongo --host repl --eval 'rs.initiate();'
-
 create_build_image:
   stage: build
   image: docker:19.03.1-dind
