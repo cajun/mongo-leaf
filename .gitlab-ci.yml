@@ -37,7 +37,7 @@ init_repl:
 create_build_image:
   stage: build
   image: docker:19.03.1
-  tag: [docker]
+  tags: [docker]
   before_script:
     - docker info
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
@@ -49,7 +49,7 @@ create_build_image:
 create_nightly_image:
   stage: build
   image: docker:19.03.1
-  tag: [docker]
+  tags: [docker]
   services:
     - name: $CI_REGISTRY/group/project/docker:19.03.1-dind
       alias: docker
