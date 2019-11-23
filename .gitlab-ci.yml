@@ -36,18 +36,26 @@ init_repl:
 
 create_build_image:
   stage: build
-  image: docker:17.10
+  image: $CI_REGISTRY/group/project/docker:19.03.1
+  services:
+    - name: $CI_REGISTRY/group/project/docker:19.03.1-dind
+      alias: docker
   before_script:
+    - docker info
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
-    - docker build -q --pull -t $BUILD_IMAGE -f Dockerfile .
+    - docker build --pull -t $BUILD_IMAGE -f Dockerfile .
     - docker push $BUILD_IMAGE
     - echo "Pushed $BUILD_IMAGE"
 
 create_nightly_image:
   stage: build
-  image: docker:17.10
+  image: $CI_REGISTRY/group/project/docker:19.03.1
+  services:
+    - name: $CI_REGISTRY/group/project/docker:19.03.1-dind
+      alias: docker
   before_script:
+    - docker info
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
     - docker build -q --pull -t $NIGHTLY_IMAGE -f Dockerfile.nightly .
