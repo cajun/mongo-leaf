@@ -1,6 +1,6 @@
 variables:
-  BUILD_IMAGE: $CI_REGISTRY_IMAGE/build:$CI_COMMIT_REF_SLUG
-  NIGHTLY_IMAGE: $CI_REGISTRY_IMAGE/nightly:$CI_COMMIT_REF_SLUG
+  BUILD_IMAGE: $CI_REGISTRY_IMAGE/build
+  NIGHTLY_IMAGE: $CI_REGISTRY_IMAGE/nightly
 
 stages:
   - build
@@ -61,7 +61,7 @@ docker-build-nightly:
 
 clippy:
   stage: clippy
-  image: $BUILD_IMAGE
+  image: $BUILD_IMAGE:latest
   before_script:
     - rustc --version
   script:
@@ -75,16 +75,16 @@ init-db-for-test:
 
 test:
   stage: test
-  image: $BUILD_IMAGE
+  image: $BUILD_IMAGE:latest
   before_script:
     - rustc --version
   script:
-    - cargo test --all --verbose
+    - cargo test --all
 
 test_nightly:
   stage: test
-  image: $NIGHTLY_IMAGE
+  image: $NIGHTLY_IMAGE:latest
   before_script:
     - rustc --version
   script:
-    - cargo test --all --verbose
+    - cargo test --all
