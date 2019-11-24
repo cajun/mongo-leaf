@@ -5,7 +5,27 @@ variables:
 stages:
   - build
   - clippy
+  - inittest
   - test
+
+services:
+  - name: mongo:latest
+    alias: standard
+    command:
+      ["mongod", "--storageEngine", "ephemeralForTest", "--dbpath", "/data/db"]
+  - name: mongo:latest
+    alias: repl
+    command:
+      [
+        "mongod",
+        "--replSet",
+        "rs0",
+        "--enableMajorityReadConcern",
+        "--storageEngine",
+        "ephemeralForTest",
+        "--dbpath",
+        "/data/db",
+      ]
 
 docker-build-master:
   # Official docker image.
@@ -39,82 +59,28 @@ clippy:
   stage: clippy
   image: $BUILD_IMAGE
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
-    - rm -fr target && mkdir -p /cache/$CI_COMMIT_REF_SLUG/target && ln -s /cache/$CI_COMMIT_REF_SLUG/target target
-    - source ~/.cargo/env
     - rustc --version
   script:
-    - RUSTFLAGS="-D warnings" CARGO_INCREMENTAL=1 RUST_BACKTRACE=1 cargo clippy
+    - cargo clippy
+
+init-db-for-test:
+  stage: inittest
+  image: mongo:latest
+  script:
+    - mongo --host repl --eval 'rs.initiate();'
 
 test:
   stage: test
   image: $BUILD_IMAGE
-  services:
-    - name: mongo:latest
-      alias: standard
-      command:
-        [
-          "mongod",
-          "--storageEngine",
-          "ephemeralForTest",
-          "--dbpath",
-          "/data/db",
-        ]
-    - name: mongo:latest
-      alias: repl
-      command:
-        [
-          "mongod",
-          "--replSet",
-          "rs0",
-          "--enableMajorityReadConcern",
-          "--storageEngine",
-          "ephemeralForTest",
-          "--dbpath",
-          "/data/db",
-        ]
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
-    - rm -fr target && mkdir -p /cache/$CI_COMMIT_REF_SLUG/target && ln -s /cache/$CI_COMMIT_REF_SLUG/target target
-    - source ~/.cargo/env
     - rustc --version
   script:
-    - RUSTFLAGS="-D warnings" CARGO_INCREMENTAL=1 RUST_BACKTRACE=1 cargo test -- --nocapture
+    - cargo test --all --verbose
 
 test_nightly:
   stage: test
   image: $NIGHTLY_IMAGE
-  services:
-    - name: mongo:latest
-      alias: standard
-      command:
-        [
-          "mongod",
-          "--storageEngine",
-          "ephemeralForTest",
-          "--dbpath",
-          "/data/db",
-        ]
-    - name: mongo:latest
-      alias: repl
-      command:
-        [
-          "mongod",
-          "--replSet",
-          "rs0",
-          "--enableMajorityReadConcern",
-          "--storageEngine",
-          "ephemeralForTest",
-          "--dbpath",
-          "/data/db",
-        ]
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p /cache/registry && ln -s /cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p /cache/git && ln -s /cache/git ~/.cargo/git
-    - rm -fr target && mkdir -p /cache/$CI_COMMIT_REF_SLUG/target && ln -s /cache/$CI_COMMIT_REF_SLUG/target target
-    - source ~/.cargo/env
     - rustc --version
   script:
-    - RUSTFLAGS="-D warnings" CARGO_INCREMENTAL=1 RUST_BACKTRACE=1 cargo test -- --nocapture
+    - cargo test --all --verbose
