@@ -38,12 +38,6 @@ docker-build-nightly:
   only:
     - master
 
-init-db-for-test:
-  stage: build
-  image: mongo:latest
-  script:
-    - mongo --host repl --eval 'rs.initiate();'
-
 clippy:
   # Official docker image.
   image: docker:latest
