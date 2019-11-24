@@ -6,6 +6,25 @@ stages:
   - build
   - test
 
+services:
+  - name: mongo:latest
+    alias: standard
+    command:
+      ["mongod", "--storageengine", "ephemeralfortest", "--dbpath", "/data/db"]
+  - name: mongo:latest
+    alias: repl
+    command:
+      [
+        "mongod",
+        "--replset",
+        "rs0",
+        "--enablemajorityreadconcern",
+        "--storageengine",
+        "ephemeralfortest",
+        "--dbpath",
+        "/data/db",
+      ]
+
 docker-build-master:
   # Official docker image.
   image: docker:latest
@@ -38,51 +57,29 @@ docker-build-nightly:
   only:
     - master
 
-clippy:
-  # Official docker image.
-  image: docker:latest
-  stage: test
-  services:
-    - docker:dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+init-db-for-test:
+  stage: build
+  image: mongo:latest
   script:
-    - docker run $BUILD_IMAGE:latest cargo clippy
+    - mongo --host repl --eval 'rs.initiate();'
+
+clippy:
+  image: $BUILD_IMAGE:latest
+  stage: test
+    - cargo clippy
   only:
     - master
 
 test:
-  # Official docker image.
-  image: docker:latest
+  image: $BUILD_IMAGE:latest
   stage: test
-  services:
-    - docker:dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker run -d --rm --name standard mongo:latest
-    - docker run -d --rm --name replSet mongo:latest mongod --replSet rs0 --enableMajorityReadConcern
-    - docker run --rm --link replSet mongo:latest mongo --host replSet --eval 'rs.initiate();'
-  script:
-    - docker run --rm --link replSet --link standard $BUILD_IMAGE:latest cargo test --all
-    - docker stop standard
-    - docker stop replSet
+    - cargo test --all
   only:
     - master
 
 test_nightly:
-  # Official docker image.
-  image: docker:latest
+  image: $NIGHTLY_IMAGE:latest
   stage: test
-  services:
-    - docker:dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker run -d --rm --name standard mongo:latest
-    - docker run -d --rm --name replSet mongo:latest mongod --replSet rs0 --enableMajorityReadConcern
-    - docker run --rm --link replSet mongo:latest mongo --host replSet --eval 'rs.initiate();'
-  script:
-    - docker run --rm --link replSet --link standard $NIGHTLY_IMAGE:latest cargo test --all
-    - docker stop standard
-    - docker stop replSet
+    - cargo test --all
   only:
     - master
