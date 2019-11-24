@@ -66,6 +66,7 @@ init-db-for-test:
 clippy:
   image: $BUILD_IMAGE:latest
   stage: test
+  script:
     - cargo clippy
   only:
     - master
@@ -73,6 +74,7 @@ clippy:
 test:
   image: $BUILD_IMAGE:latest
   stage: test
+  script:
     - cargo test --all
   only:
     - master
@@ -80,6 +82,7 @@ test:
 test_nightly:
   image: $NIGHTLY_IMAGE:latest
   stage: test
+  script:
     - cargo test --all
   only:
     - master
