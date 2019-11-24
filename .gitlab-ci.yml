@@ -10,17 +10,17 @@ services:
   - name: mongo:latest
     alias: standard
     command:
-      ["mongod", "--storageengine", "ephemeralfortest", "--dbpath", "/data/db"]
+      ["mongod", "--storageEngine", "ephemeralForTest", "--dbpath", "/data/db"]
   - name: mongo:latest
     alias: repl
     command:
       [
         "mongod",
-        "--replset",
+        "--replSet",
         "rs0",
-        "--enablemajorityreadconcern",
-        "--storageengine",
-        "ephemeralfortest",
+        "--enableMajorityReadConcern",
+        "--storageEngine",
+        "ephemeralForTest",
         "--dbpath",
         "/data/db",
       ]
