@@ -276,13 +276,13 @@ impl Client for Clientc<'_> {
     ///     doc!{"name": "fourth"},
     /// ])?;
     ///
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(4, count, "In Transaction");
     ///
     /// let reply = session.abort()?;
     /// assert!(reply);
     ///
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(0, count, "Transaction Aborted");
     ///
     /// # db.destroy();

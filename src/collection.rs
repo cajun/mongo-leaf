@@ -4,9 +4,8 @@ use crate::{
     change_stream::{ChangeStream, ChangeStreamc},
     cursor::{Cursor, Cursorc},
     error::{BsoncError, Result},
-    insert_flags::{InsertFlags, InsertFlagsc},
-    read_prefs::{ReadPrefs, ReadPrefsc},
-    write_concern::{WriteConcern, WriteConcernc},
+    options::{Count, FindAndModify, Insert, Remove, Update},
+    read_prefs::{ReadMode, ReadPrefs, ReadPrefsc},
 };
 
 use std::ptr;
@@ -17,54 +16,45 @@ pub struct Collectionc {
 }
 
 pub trait Collection {
-    type InsertFlags: InsertFlags + Sized;
-    type ReadPrefs: ReadPrefs + Sized;
-    type WriteConcern: WriteConcern + Sized;
     type Cursor: Cursor;
     type ChangeStream: ChangeStream;
 
-    fn count(
-        &self,
-        filter: Option<bson::Document>,
-        opts: Option<bson::Document>,
-        read_prefs: Option<Self::ReadPrefs>,
-    ) -> Result<i64>;
+    fn count(&self, filter: Option<bson::Document>) -> Result<i64>;
+    fn count_with_opts(&self, filter: Option<bson::Document>, opts: Option<Count>) -> Result<i64>;
 
-    fn insert_one(
+    fn insert_one(&self, doc: bson::Document) -> Result<bson::Document>;
+
+    fn insert_one_with_opts(
         &self,
         doc: bson::Document,
-        // TODO: Update with the full opts. Many more flags
-        // write_concern: Option<Self::WriteConcern>,
+        opts: Option<Insert>,
     ) -> Result<bson::Document>;
 
-    fn insert_many(
+    fn insert_many(&self, docs: Vec<bson::Document>) -> Result<bson::Document>;
+
+    fn insert_many_with_opts(
         &self,
         docs: Vec<bson::Document>,
-        // TODO: Update with the full opts. Many more flags
-        // write_concern: Option<Self::WriteConcern>,
+        opts: Option<Insert>,
     ) -> Result<bson::Document>;
 
-    fn delete(
+    fn delete(&self, selector: bson::Document) -> Result<bson::Document>;
+    fn delete_with_opts(
         &self,
         selector: bson::Document,
-        // TODO: Update with the full opts. Many more flags
-        // write_concern: Option<Self::WriteConcern>,
+        opts: Option<Remove>,
     ) -> Result<bson::Document>;
 
-    fn update(
+    fn update(&self, selector: bson::Document, update: bson::Document) -> Result<bson::Document>;
+    fn update_with_opts(
         &self,
         selector: bson::Document,
         update: bson::Document,
-        // TODO: Update with the full opts. Many more flags
-        // write_concern: Option<Self::WriteConcern>,
+        opts: Option<Update>,
     ) -> Result<bson::Document>;
 
-    fn find(
-        &self,
-        filter: bson::Document,
-        opts: Option<bson::Document>,
-        read_prefs: Option<Self::ReadPrefs>,
-    ) -> Self::Cursor;
+    fn find(&self, filter: bson::Document) -> Self::Cursor;
+    fn find_with_opts(&self, filter: bson::Document, opts: Option<FindAndModify>) -> Self::Cursor;
 
     fn destroy(&self) -> Result<bool>;
 
@@ -82,9 +72,6 @@ impl Collectionc {
 }
 
 impl Collection for Collectionc {
-    type InsertFlags = InsertFlagsc;
-    type ReadPrefs = ReadPrefsc;
-    type WriteConcern = WriteConcernc;
     type Cursor = Cursorc;
     type ChangeStream = ChangeStreamc;
 
@@ -119,22 +106,65 @@ impl Collection for Collectionc {
     ///
     /// let db = client.default_database();
     /// let collection = db.get_collection("test");
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(0, count);
     ///
     /// # db.destroy();
     /// # Ok(())
     /// # }
     /// ```
-    fn count(
-        &self,
-        filter: Option<bson::Document>,
-        opts: Option<bson::Document>,
-        read_prefs: Option<Self::ReadPrefs>,
-    ) -> Result<i64> {
+    fn count(&self, filter: Option<bson::Document>) -> Result<i64> {
+        self.count_with_opts(filter, None)
+    }
+
+    /// Counts the number of documents in a collection.
+    ///
+    /// From MongoDB Docs
+    /// filter: A bson::Document containing the filter.
+    /// opts: A bson::Document, None to ignore.
+    /// read_prefs: A mongoc_read_prefs_t or None.
+    /// opts may be None or a BSON document with additional command options:
+    ///  readConcern: Construct a mongoc_read_concern_t and use mongoc_read_concern_append() to add the read concern to opts. See the example code for mongoc_client_read_command_with_opts(). Read concern requires MongoDB 3.2 or later, otherwise an error is returned.
+    ///  sessionId: First, construct a mongoc_client_session_t with mongoc_client_start_session(). You can begin a transaction with mongoc_client_session_start_transaction(), optionally with a mongoc_transaction_opt_t that overrides the options inherited from collection, and use mongoc_client_session_append() to add the session to opts. See the example code for mongoc_client_session_t.
+    ///  collation: Configure textual comparisons. See Setting Collation Order, and the MongoDB Manual entry on Collation. Collation requires MongoDB 3.2 or later, otherwise an error is returned.
+    ///  serverId: To target a specific server, include an int32 “serverId” field. Obtain the id by calling mongoc_client_select_server(), then mongoc_server_description_id() on its return value.
+    ///  skip: An int specifying how many documents matching the query should be skipped before counting.
+    ///  limit: An int specifying the maximum number of documents to count.
+    ///
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
+    ///
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    ///
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// let count = collection.count_with_opts(None, None)?;
+    /// assert_eq!(0, count);
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn count_with_opts(&self, filter: Option<bson::Document>, opts: Option<Count>) -> Result<i64> {
         let bsonc_filter =
             filter.map_or_else(|| Ok(Bsonc::empty()), |d| Bsonc::from_document(&d))?;
-        let bsonc_opts = opts.map_or_else(|| Ok(Bsonc::empty()), |d| Bsonc::from_document(&d))?;
+
+        let op = opts.unwrap_or_default();
+        let bsonc_opts = op
+            .opts
+            .map_or_else(|| Ok(Bsonc::empty()), |d| Bsonc::from_document(&d))?;
+
+        let rp = ReadPrefsc::new(&op.read_prefs.unwrap_or(ReadMode::Primary));
 
         let reply = Bsonc::empty();
         let mut error = BsoncError::empty();
@@ -143,7 +173,7 @@ impl Collection for Collectionc {
                 self.inner,
                 bsonc_filter.as_ptr(),
                 bsonc_opts.as_ptr(),
-                read_prefs.unwrap_or_default().as_ptr(),
+                rp.as_ptr(),
                 reply.as_mut_ptr(),
                 error.as_mut_ptr(),
             )
@@ -176,7 +206,7 @@ impl Collection for Collectionc {
     /// let collection = db.get_collection("test");
     /// let doc = doc!{"name": "omg"};
     /// let result = collection.insert_one(doc)?;
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(1, count);
     ///
     /// # db.destroy();
@@ -184,6 +214,41 @@ impl Collection for Collectionc {
     /// # }
     /// ```
     fn insert_one(&self, doc: bson::Document) -> Result<bson::Document> {
+        self.insert_one_with_opts(doc, None)
+    }
+
+    /// Inserts one doc the number of documents in a collection.
+    ///
+    /// TODO: Add docs
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// let doc = doc!{"name": "omg"};
+    /// let result = collection.insert_one_with_opts(doc, None)?;
+    /// let count = collection.count(None)?;
+    /// assert_eq!(1, count);
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn insert_one_with_opts(
+        &self,
+        doc: bson::Document,
+        _opts: Option<Insert>,
+    ) -> Result<bson::Document> {
         let mut error = BsoncError::empty();
         let reply = Bsonc::empty();
         let opts = Bsonc::empty();
@@ -231,7 +296,7 @@ impl Collection for Collectionc {
     ///     doc!{"name": "fourth"},
     /// ];
     /// let result = collection.insert_many(docs)?;
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(4, count);
     ///
     /// # db.destroy();
@@ -239,6 +304,47 @@ impl Collection for Collectionc {
     /// # }
     /// ```
     fn insert_many(&self, docs: Vec<bson::Document>) -> Result<bson::Document> {
+        self.insert_many_with_opts(docs, None)
+    }
+
+    /// Inserts many docs the number of documents in a collection.
+    ///
+    /// TODO: Add docs
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    /// let builder = Builder::new();
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// let docs = vec![
+    ///     doc!{"name": "first"},
+    ///     doc!{"name": "second"},
+    ///     doc!{"name": "third"},
+    ///     doc!{"name": "fourth"},
+    /// ];
+    /// let result = collection.insert_many_with_opts(docs, None)?;
+    /// let count = collection.count(None)?;
+    /// assert_eq!(4, count);
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn insert_many_with_opts(
+        &self,
+        docs: Vec<bson::Document>,
+        _opts: Option<Insert>,
+    ) -> Result<bson::Document> {
         let mut error = BsoncError::empty();
         let reply = Bsonc::empty();
         let opts = Bsonc::empty();
@@ -288,11 +394,11 @@ impl Collection for Collectionc {
     /// let collection = db.get_collection("test");
     /// let doc = doc!{"name": "omg"};
     /// collection.insert_one(doc)?;
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(1, count);
     /// let selector = doc!{"name": "omg"};
     /// collection.delete(selector)?;
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(0, count);
     ///
     /// # db.destroy();
@@ -300,6 +406,45 @@ impl Collection for Collectionc {
     /// # }
     /// ```
     fn delete(&self, doc: bson::Document) -> Result<bson::Document> {
+        self.delete_with_opts(doc, None)
+    }
+
+    /// Deletes one doc the number of documents in a collection.
+    ///
+    /// TODO: Add docs
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// let doc = doc!{"name": "omg"};
+    /// collection.insert_one(doc)?;
+    /// let count = collection.count(None)?;
+    /// assert_eq!(1, count);
+    /// let selector = doc!{"name": "omg"};
+    /// collection.delete_with_opts(selector, None)?;
+    /// let count = collection.count(None)?;
+    /// assert_eq!(0, count);
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn delete_with_opts(
+        &self,
+        doc: bson::Document,
+        _opts: Option<Remove>,
+    ) -> Result<bson::Document> {
         let mut error = BsoncError::empty();
         let reply = Bsonc::empty();
         let opts = Bsonc::empty();
@@ -341,11 +486,11 @@ impl Collection for Collectionc {
     /// let collection = db.get_collection("test");
     /// let doc = doc!{"name": "omg"};
     /// collection.insert_one(doc)?;
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(1, count);
     /// let selector = doc!{"name": "omg"};
     /// collection.update(selector, doc!{"$set": {"name": "foo"}})?;
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(1, count);
     ///
     /// # db.destroy();
@@ -353,6 +498,46 @@ impl Collection for Collectionc {
     /// # }
     /// ```
     fn update(&self, selector: bson::Document, update: bson::Document) -> Result<bson::Document> {
+        self.update_with_opts(selector, update, None)
+    }
+
+    /// Updates one doc the number of documents in a collection.
+    ///
+    /// TODO: Add docs
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// let doc = doc!{"name": "omg"};
+    /// collection.insert_one(doc)?;
+    /// let count = collection.count(None)?;
+    /// assert_eq!(1, count);
+    /// let selector = doc!{"name": "omg"};
+    /// collection.update_with_opts(selector, doc!{"$set": {"name": "foo"}}, None)?;
+    /// let count = collection.count(None)?;
+    /// assert_eq!(1, count);
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn update_with_opts(
+        &self,
+        selector: bson::Document,
+        update: bson::Document,
+        _opts: Option<Update>,
+    ) -> Result<bson::Document> {
         let mut error = BsoncError::empty();
         let reply = Bsonc::empty();
         let opts = Bsonc::empty();
@@ -397,10 +582,10 @@ impl Collection for Collectionc {
     /// collection.insert_one(doc)?;
     /// let doc = doc!{"name": "foo"};
     /// collection.insert_one(doc)?;
-    /// let count = collection.count(None, None, None)?;
+    /// let count = collection.count(None)?;
     /// assert_eq!(2, count);
     ///
-    /// let maybe: Result<Vec<bson::Document>> = collection.find(doc!{"name": "foo"}, None, None).collect();
+    /// let maybe: Result<Vec<bson::Document>> = collection.find(doc!{"name": "foo"}).collect();
     ///
     /// assert!(maybe.is_ok());
     /// let records = maybe.unwrap();
@@ -410,23 +595,55 @@ impl Collection for Collectionc {
     /// # Ok(())
     /// # }
     /// ```
-    fn find(
-        &self,
-        filter: bson::Document,
-        opts: Option<bson::Document>,
-        read_prefs: Option<Self::ReadPrefs>,
-    ) -> Self::Cursor {
+    fn find(&self, filter: bson::Document) -> Self::Cursor {
+        self.find_with_opts(filter, None)
+    }
+
+    /// Finds docs the number of documents in a collection.
+    ///
+    /// TODO: Add docs
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongoc_to_rs_sys::prelude::*;
+    /// use std::env;
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// let doc = doc!{"name": "omg"};
+    /// collection.insert_one(doc)?;
+    /// let doc = doc!{"name": "foo"};
+    /// collection.insert_one(doc)?;
+    /// let count = collection.count(None)?;
+    /// assert_eq!(2, count);
+    ///
+    /// let maybe: Result<Vec<bson::Document>> = collection.find(doc!{"name": "foo"}).collect();
+    ///
+    /// assert!(maybe.is_ok());
+    /// let records = maybe.unwrap();
+    ///
+    /// assert_eq!(1, records.len());
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn find_with_opts(&self, filter: bson::Document, _opts: Option<FindAndModify>) -> Self::Cursor {
         let bson_filter = Bsonc::from_document(&filter).expect("should be valid");
-        let bson_opts = opts.map_or_else(Bsonc::empty, |o| {
-            Bsonc::from_document(&o).expect("should be valid")
-        });
+        let bson_opts = Bsonc::empty();
 
         let ptr = unsafe {
             bindings::mongoc_collection_find_with_opts(
                 self.inner,
                 bson_filter.as_ptr(),
                 bson_opts.as_ptr(),
-                read_prefs.unwrap_or_default().as_ptr(),
+                ReadPrefsc::default().as_ptr(),
             )
         };
 
