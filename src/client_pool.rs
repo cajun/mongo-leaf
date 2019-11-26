@@ -32,7 +32,7 @@ impl ClientPoolc {
     ///
     /// # Examples
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     ///
     /// # fn main() -> Result<()> {
     /// let builder = Builder::new();
@@ -65,7 +65,7 @@ impl<'a> ClientPool<'a> for ClientPoolc {
     /// # Examples
     ///
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     ///
     /// # fn main() -> Result<()> {
     /// let builder = Builder::new();
@@ -93,7 +93,7 @@ impl<'a> ClientPool<'a> for ClientPoolc {
     /// # Examples
     ///
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     ///
     /// # fn main() -> Result<()> {
     /// let builder = Builder::new();
@@ -116,7 +116,7 @@ impl<'a> ClientPool<'a> for ClientPoolc {
     /// # Examples
     ///
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     ///
     /// # fn main() -> Result<()> {
     /// let builder = Builder::new();

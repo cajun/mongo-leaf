@@ -1,5 +1,5 @@
 [package]
-name = "mongoc-to-rs-sys"
+name = "mongo-leaf"
 version = "1.15.2"
 authors = ["Zac Kleinpeter <zac@kleinpeter.org>"]
 edition = "2018"

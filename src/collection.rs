@@ -4,7 +4,8 @@ use crate::{
     change_stream::{ChangeStream, ChangeStreamc},
     cursor::{Cursor, Cursorc},
     error::{BsoncError, Result},
-    options::{Count, FindAndModify, Insert, Remove, Update},
+    flags::FlagsValue,
+    options::{Aggregate, Count, FindAndModify, Insert, Remove, Update},
     read_prefs::{ReadMode, ReadPrefs, ReadPrefsc},
 };
 
@@ -56,6 +57,13 @@ pub trait Collection {
     fn find(&self, filter: bson::Document) -> Self::Cursor;
     fn find_with_opts(&self, filter: bson::Document, opts: Option<FindAndModify>) -> Self::Cursor;
 
+    fn aggregate(&self, pipeline: bson::Document) -> Self::Cursor;
+    fn aggregate_with_opts(
+        &self,
+        pipeline: bson::Document,
+        opts: Option<Aggregate>,
+    ) -> Self::Cursor;
+
     fn destroy(&self) -> Result<bool>;
 
     fn watch(
@@ -93,7 +101,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     ///
@@ -135,7 +143,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     ///
@@ -193,7 +201,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -224,7 +232,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -277,7 +285,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -314,7 +322,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -381,7 +389,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -416,7 +424,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -473,7 +481,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -508,7 +516,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -567,7 +575,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -606,7 +614,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -650,6 +658,128 @@ impl Collection for Collectionc {
         Cursorc::from_ptr(ptr)
     }
 
+    /// Finds docs the number of documents in a collection.
+    ///
+    /// TODO: Add docs
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongo_leaf::prelude::*;
+    /// use std::env;
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// collection.insert_many(vec![
+    ///     doc!{"num": 1},
+    ///     doc!{"num": 2},
+    ///     doc!{"num": 3},
+    ///     doc!{"num": 4},
+    /// ])?;
+    ///
+    /// let maybe: Result<Vec<bson::Document>> = collection.aggregate(doc!{"pipeline": [
+    /// {
+    ///     "$group": {
+    ///         "_id": null,
+    ///         "total": { "$sum": "$num" }
+    ///     }
+    /// }
+    /// ]}).collect();
+    ///
+    /// assert!(maybe.is_ok());
+    /// let records = maybe.unwrap();
+    /// let val = dbg!(records)[0].get_i32("total");
+    ///
+    /// assert!(val.is_ok());
+    /// assert_eq!(10, val.unwrap());
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn aggregate(&self, pipeline: bson::Document) -> Self::Cursor {
+        self.aggregate_with_opts(pipeline, None)
+    }
+
+    /// Finds docs the number of documents in a collection.
+    ///
+    /// TODO: Add docs
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongo_leaf::prelude::*;
+    /// use std::env;
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// collection.insert_many(vec![
+    ///     doc!{"num": 1},
+    ///     doc!{"num": 2},
+    ///     doc!{"num": 3},
+    ///     doc!{"num": 4},
+    /// ])?;
+    ///
+    /// let maybe: Result<Vec<bson::Document>> = collection.aggregate_with_opts(doc!{"pipeline": [
+    /// {
+    ///     "$group": {
+    ///         "_id": null,
+    ///         "total": { "$sum": "$num" }
+    ///     }
+    /// }
+    /// ]}, None).collect();
+    ///
+    /// assert!(maybe.is_ok());
+    /// let records = maybe.unwrap();
+    /// let val = dbg!(records)[0].get_i32("total");
+    ///
+    /// assert!(val.is_ok());
+    /// assert_eq!(10, val.unwrap());
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn aggregate_with_opts(
+        &self,
+        pipeline: bson::Document,
+        opts: Option<Aggregate>,
+    ) -> Self::Cursor {
+        let bsonc_pipeline = Bsonc::from_document(&pipeline).expect("should be valid");
+
+        let agg_opts = opts.unwrap_or_default();
+        let bsonc_opts = agg_opts.options.map_or_else(
+            || Bsonc::empty(),
+            |o| Bsonc::from_document(&o).expect("Should be a valid doc"),
+        );
+        let read_pref = agg_opts
+            .read_prefs
+            .map_or_else(|| ReadPrefsc::default(), |level| ReadPrefsc::new(&level));
+
+        let ptr = unsafe {
+            bindings::mongoc_collection_aggregate(
+                self.inner,
+                agg_opts.query_flags.flags(),
+                bsonc_pipeline.as_ptr(),
+                bsonc_opts.as_ptr(),
+                read_pref.as_ptr(),
+            )
+        };
+
+        Cursorc::from_ptr(ptr)
+    }
+
     /// Drops collection
     ///
     /// TODO: Add docs
@@ -657,7 +787,7 @@ impl Collection for Collectionc {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -693,7 +823,7 @@ impl Collection for Collectionc {
     /// ```no_run
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {

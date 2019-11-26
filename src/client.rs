@@ -82,7 +82,7 @@ impl Client for Clientc<'_> {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -133,7 +133,7 @@ impl Client for Clientc<'_> {
     /// ```no_run
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -196,7 +196,7 @@ impl Client for Clientc<'_> {
     /// ```
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {
@@ -253,7 +253,7 @@ impl Client for Clientc<'_> {
     /// ```no_run
     /// #[macro_use]
     /// extern crate bson;
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::env;
     ///
     /// # fn main() -> Result<()> {

@@ -45,7 +45,7 @@ impl Uri for Uric {
     /// # Examples
     ///
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     ///
     /// let valid_uris = vec![
     ///   "mongodb://localhost/",
@@ -67,7 +67,7 @@ impl Uri for Uric {
     ///
     /// Invalid Uri's
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     ///
     /// let uri = Uric::new("failme://localhost");
     /// assert!(uri.is_err(), "{:?}", uri);
@@ -94,7 +94,7 @@ impl Uri for Uric {
     /// # Examples
     ///
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::borrow::Cow;
     ///
     /// let uri = Uric::new("mongodb://localhost:27017/some_db").unwrap();
@@ -120,7 +120,7 @@ impl Uri for Uric {
     /// # Examples
     ///
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::borrow::Cow;
     ///
     /// let uri = Uric::new("mongodb://localhost:27017/some_db").unwrap();
@@ -138,7 +138,7 @@ impl Uri for Uric {
     ///
     /// # Multiple Hosts
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::borrow::Cow;
     ///
     /// let uri = Uric::new("mongodb://snoopy:5544,woodstock:4455/").unwrap();
@@ -171,7 +171,7 @@ impl Uri for Uric {
     /// # Examples
     ///
     /// ```
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::borrow::Cow;
     ///
     /// let uri = Uric::new("mongodb://localhost:27017/copied").unwrap();
@@ -198,7 +198,7 @@ impl Uri for Uric {
     /// # Examples
     ///
     /// ```should_panic
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     ///
     /// let mut uri = Uric::new("mongodb://localhost:27017/to_destroy").unwrap();
     /// uri.destroy();
@@ -220,7 +220,7 @@ impl Uri for Uric {
     /// ```
     /// # #[macro_use] extern crate bson;
     /// # fn main() {
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::borrow::Cow;
     ///
     /// let uri = Uric::new("mongodb://some@localhost:27017/?authMechanism=CoolBeans").unwrap();
@@ -247,7 +247,7 @@ impl Uri for Uric {
     /// ```
     /// # #[macro_use] extern crate bson;
     /// # fn main() {
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     /// use std::borrow::Cow;
     ///
     /// let uri = Uric::new("mongodb://localhost:27017/?authSource=other_db").unwrap();
@@ -276,7 +276,7 @@ impl Uri for Uric {
     /// ```
     /// # #[macro_use] extern crate bson;
     /// # fn main() {
-    /// use mongoc_to_rs_sys::prelude::*;
+    /// use mongo_leaf::prelude::*;
     ///
     /// let uri = Uric::new("mongodb://localhost:27017/?compressors=zlib").unwrap();
     /// assert_eq!(
