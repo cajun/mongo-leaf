@@ -4,6 +4,8 @@
 
 #[macro_use]
 extern crate bson;
+#[macro_use]
+extern crate failure;
 
 use std::sync::Once;
 
@@ -26,6 +28,7 @@ mod flags;
 mod host;
 mod options;
 pub mod prelude;
+mod read_concern;
 mod read_prefs;
 mod session;
 mod session_opts;

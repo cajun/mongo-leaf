@@ -11,6 +11,26 @@ pub struct Sessionc {
     inner: *mut bindings::mongoc_client_session_t,
 }
 
+impl Sessionc {
+    pub fn append(&self, opts: &mut Bsonc) -> Result<bool> {
+        let mut error = BsoncError::empty();
+
+        let success = unsafe {
+            bindings::mongoc_client_session_append(
+                self.inner,
+                opts.as_mut_ptr(),
+                error.as_mut_ptr(),
+            )
+        };
+
+        if success {
+            Ok(success)
+        } else {
+            Err(error.into())
+        }
+    }
+}
+
 pub trait Session {
     type TransactionOpts: TransactionOpts + Sized + Default;
 

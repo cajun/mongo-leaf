@@ -132,12 +132,22 @@ impl Collection for Collectionc {
     /// opts: A bson::Document, None to ignore.
     /// read_prefs: A mongoc_read_prefs_t or None.
     /// opts may be None or a BSON document with additional command options:
-    ///  readConcern: Construct a mongoc_read_concern_t and use mongoc_read_concern_append() to add the read concern to opts. See the example code for mongoc_client_read_command_with_opts(). Read concern requires MongoDB 3.2 or later, otherwise an error is returned.
-    ///  sessionId: First, construct a mongoc_client_session_t with mongoc_client_start_session(). You can begin a transaction with mongoc_client_session_start_transaction(), optionally with a mongoc_transaction_opt_t that overrides the options inherited from collection, and use mongoc_client_session_append() to add the session to opts. See the example code for mongoc_client_session_t.
-    ///  collation: Configure textual comparisons. See Setting Collation Order, and the MongoDB Manual entry on Collation. Collation requires MongoDB 3.2 or later, otherwise an error is returned.
-    ///  serverId: To target a specific server, include an int32 “serverId” field. Obtain the id by calling mongoc_client_select_server(), then mongoc_server_description_id() on its return value.
-    ///  skip: An int specifying how many documents matching the query should be skipped before counting.
-    ///  limit: An int specifying the maximum number of documents to count.
+    ///  readConcern: Construct a mongoc_read_concern_t and use mongoc_read_concern_append() to add
+    ///  the read concern to opts. See the example code for mongoc_client_read_command_with_opts().
+    ///  Read concern requires MongoDB 3.2 or later, otherwise an error is returned.
+    ///
+    ///  sessionId: First, construct a mongoc_client_session_t with mongoc_client_start_session().
+    ///  You can begin a transaction with mongoc_client_session_start_transaction(), optionally
+    ///  with a mongoc_transaction_opt_t that overrides the options inherited from collection, and
+    ///  use mongoc_client_session_append() to add the session to opts. See the example code for
+    ///  mongoc_client_session_t.  collation: Configure textual comparisons. See Setting Collation
+    ///  Order, and the MongoDB Manual entry on Collation. Collation requires MongoDB 3.2 or later,
+    ///  otherwise an error is returned.
+    ///
+    ///  serverId: To target a specific server, include an int32 “serverId” field. Obtain the id by
+    ///  calling mongoc_client_select_server(), then mongoc_server_description_id() on its return
+    ///  value.  skip: An int specifying how many documents matching the query should be skipped
+    ///  before counting.  limit: An int specifying the maximum number of documents to count.
     ///
     /// # Examples
     /// ```
@@ -759,13 +769,13 @@ impl Collection for Collectionc {
         let bsonc_pipeline = Bsonc::from_document(&pipeline).expect("should be valid");
 
         let agg_opts = opts.unwrap_or_default();
-        let bsonc_opts = agg_opts.options.map_or_else(
-            || Bsonc::empty(),
-            |o| Bsonc::from_document(&o).expect("Should be a valid doc"),
-        );
+        let bsonc_opts = agg_opts.options.map_or_else(Bsonc::empty, |o| {
+            Bsonc::from_document(&o).expect("Should be a valid doc")
+        });
+
         let read_pref = agg_opts
             .read_prefs
-            .map_or_else(|| ReadPrefsc::default(), |level| ReadPrefsc::new(&level));
+            .map_or_else(ReadPrefsc::default, |level| ReadPrefsc::new(&level));
 
         let ptr = unsafe {
             bindings::mongoc_collection_aggregate(

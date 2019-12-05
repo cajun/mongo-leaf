@@ -91,6 +91,8 @@ pub struct Count {
     pub read_prefs: Option<ReadMode>,
 }
 
+impl Count {}
+
 impl Default for Count {
     /// Default options used if none are provided.
     fn default() -> Self {

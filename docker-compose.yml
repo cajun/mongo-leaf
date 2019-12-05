@@ -1,6 +1,7 @@
 version: "3.7"
 services:
   lib:
+    tty: true
     build: .
     volumes:
       - /app/target
@@ -9,12 +10,14 @@ services:
       - standard
       - repl
   clippy:
+    tty: true
     build: .
     command: cargo watch -x 'clippy'
     volumes:
       - /app/target
       - ./:/app
   nightly:
+    tty: true
     build:
       context: .
       dockerfile: Dockerfile.nightly
@@ -24,12 +27,15 @@ services:
     depends_on:
       - standard
       - repl
+
   standard:
+    tty: true
     image: mongo:latest
     command: mongod --storageEngine ephemeralForTest --dbpath /data/db
     volumes:
       - /data/db
   repl:
+    tty: true
     image: mongo:latest
     command: mongod --replSet rs0 --enableMajorityReadConcern --storageEngine ephemeralForTest --dbpath /data/db
     volumes:

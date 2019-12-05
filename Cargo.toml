@@ -1,6 +1,6 @@
 [package]
 name = "mongo-leaf"
-version = "1.15.2"
+version = "0.1.0"
 authors = ["Zac Kleinpeter <zac@kleinpeter.org>"]
 edition = "2018"
 build = "build.rs"
@@ -10,6 +10,11 @@ libc        = "0.2"
 openssl-sys = { version = "0.9", features = ["vendored"] }
 bson = "0.14.0"
 rand = "0.7.2"
+failure = "0.1.6"
+failure_derive = "0.1.6"
+
+#[badges]
+#gitlab = { repository = "...", branch = "master" }
 
 [build-dependencies]
 bindgen = "0.51.1"

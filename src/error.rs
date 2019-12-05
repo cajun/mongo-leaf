@@ -1,17 +1,22 @@
-use crate::bindings;
+use crate::{bindings, read_concern::ReadConcernLevel};
 use std::borrow::Cow;
 use std::error;
 use std::ffi::CStr;
 use std::fmt;
 
 use bson::{DecoderError, Document, EncoderError, ValueAccessError};
+use failure::{Backtrace, Context, Fail};
 use std::ffi::NulError;
 
-/// Result that's used in all functions that perform operations
-/// on the database.
-pub type Result<T> = std::result::Result<T, MongoError>;
+pub type Result<LeafError> = std::result::Result<LeafError, failure::Error>;
+
+#[derive(Debug)]
+struct LeafError {
+    inner: Context<MongoError>,
+}
 
 /// Wrapper for all errors that can occur in the driver.
+#[derive(Fail)]
 pub enum MongoError {
     /// Error in the underlying C driver.
     Bsonc(Box<BsoncError>),
@@ -25,6 +30,7 @@ pub enum MongoError {
     InvalidParams(InvalidParamsError),
     // from CString::new(db)
     Nul(NulError),
+    InvalidReadConcern(ReadConcernLevel),
 }
 
 impl fmt::Display for MongoError {
@@ -36,6 +42,7 @@ impl fmt::Display for MongoError {
             MongoError::ValueAccessError(ref err) => write!(f, "{}", err),
             MongoError::InvalidParams(ref err) => write!(f, "{}", err),
             MongoError::Nul(ref err) => write!(f, "{}", err),
+            MongoError::InvalidReadConcern(ref err) => write!(f, "Invalid Read concern of {}", err),
         }
     }
 }
@@ -49,31 +56,40 @@ impl fmt::Debug for MongoError {
             MongoError::ValueAccessError(ref err) => write!(f, "MongoError ({:?})", err),
             MongoError::InvalidParams(ref err) => write!(f, "MongoError ({:?})", err),
             MongoError::Nul(ref err) => write!(f, "MongoError ({:?})", err),
+            MongoError::InvalidReadConcern(ref err) => {
+                write!(f, "MongoError (Invalid Read concern of {:?})", err)
+            }
         }
     }
 }
 
-impl error::Error for MongoError {
-    fn description(&self) -> &str {
-        match *self {
-            MongoError::Bsonc(ref err) => err.description(),
-            MongoError::Decoder(ref err) => err.description(),
-            MongoError::Encoder(ref err) => err.description(),
-            MongoError::ValueAccessError(ref err) => err.description(),
-            MongoError::InvalidParams(ref err) => err.description(),
-            MongoError::Nul(ref err) => err.description(),
-        }
+impl Fail for LeafError {
+    fn cause(&self) -> Option<&dyn Fail> {
+        self.inner.cause()
     }
 
-    fn cause(&self) -> Option<&dyn error::Error> {
-        match *self {
-            MongoError::Bsonc(ref err) => Some(err),
-            MongoError::Decoder(ref err) => Some(err),
-            MongoError::Encoder(ref err) => Some(err),
-            MongoError::ValueAccessError(ref err) => Some(err),
-            MongoError::InvalidParams(ref err) => Some(err),
-            MongoError::Nul(ref err) => Some(err),
+    fn backtrace(&self) -> Option<&Backtrace> {
+        self.inner.backtrace()
+    }
+}
+
+impl fmt::Display for LeafError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.inner, f)
+    }
+}
+
+impl From<MongoError> for LeafError {
+    fn from(kind: MongoError) -> LeafError {
+        LeafError {
+            inner: Context::new(kind),
         }
+    }
+}
+
+impl From<Context<MongoError>> for LeafError {
+    fn from(inner: Context<MongoError>) -> LeafError {
+        LeafError { inner }
     }
 }
 
@@ -421,25 +437,9 @@ impl From<BsoncError> for MongoError {
 }
 
 /// Invalid params error that can be reported by the underlying C driver.
+#[derive(Fail, Debug)]
+#[fail(display = "Invalid params supplied")]
 pub struct InvalidParamsError;
-
-impl fmt::Debug for InvalidParamsError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "InvalidParamsError: Invalid params supplied")
-    }
-}
-
-impl fmt::Display for InvalidParamsError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Invalid params supplied")
-    }
-}
-
-impl error::Error for InvalidParamsError {
-    fn description(&self) -> &str {
-        "Invalid params reported by the underlying Mongo C driver, no more information is available"
-    }
-}
 
 impl From<InvalidParamsError> for MongoError {
     fn from(error: InvalidParamsError) -> MongoError {
@@ -448,24 +448,13 @@ impl From<InvalidParamsError> for MongoError {
 }
 
 /// Error returned by a bulk operation that includes a report in the reply document.
-#[derive(Debug)]
+#[derive(Fail, Debug)]
+#[fail(display = "Bulk operation error {}", error)]
 pub struct BulkOperationError {
     /// Returned error
     pub error: MongoError,
     /// Error report
     pub reply: Document,
-}
-
-impl fmt::Display for BulkOperationError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Bulk operation error {}", self.error)
-    }
-}
-
-impl error::Error for BulkOperationError {
-    fn description(&self) -> &str {
-        "Error returned by a bulk operation that includes a report in the reply document"
-    }
 }
 
 #[cfg(test)]
