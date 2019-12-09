@@ -40,6 +40,7 @@ pub trait FlagsValue {
     fn flags(&self) -> u32;
 }
 
+/*
 /// Flags for insert operations
 /// See: http://mongoc.org/libmongoc/current/mongoc_insert_flags_t.html
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
@@ -69,6 +70,7 @@ impl FlagsValue for Flags<InsertFlag> {
         }
     }
 }
+*/
 
 /// Flags for query operations
 /// See: http://mongoc.org/libmongoc/current/mongoc_query_flags_t.html
@@ -120,6 +122,7 @@ impl FlagsValue for Flags<QueryFlag> {
     }
 }
 
+/*
 /// Flags for deletion operations
 /// See: http://mongoc.org/libmongoc/current/mongoc_remove_flags_t.html
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
@@ -166,3 +169,4 @@ impl FlagsValue for Flags<UpdateFlag> {
         }
     }
 }
+*/

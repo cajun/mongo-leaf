@@ -1,6 +1,7 @@
 use crate::{
     bsonc::Bsonc,
-    flags::{Flags, InsertFlag, QueryFlag, RemoveFlag, UpdateFlag},
+    error::Result,
+    flags::{Flags, FlagsValue, QueryFlag},
     read_prefs::ReadMode,
     write_concern::WriteConcernLevel,
 };
@@ -11,10 +12,7 @@ use std::time::Duration;
 pub struct Aggregate {
     /// Flags to use
     pub query_flags: Flags<QueryFlag>,
-    ///  for the aggregate
-    pub options: Option<Document>,
-    /// Read prefs to use
-    pub read_prefs: Option<ReadMode>,
+    pub batch_size: Option<i32>,
 }
 
 impl Default for Aggregate {
@@ -23,8 +21,31 @@ impl Default for Aggregate {
     fn default() -> Self {
         Aggregate {
             query_flags: Flags::new(),
-            options: None,
-            read_prefs: None,
+            batch_size: None,
+        }
+    }
+}
+
+impl Aggregate {
+    pub(crate) fn into_mongoc(self) -> Result<Bsonc> {
+        if let Some(size) = self.batch_size {
+            let d = doc! {
+                "batchSize": size,
+            };
+            Bsonc::from_document(&d)
+        } else {
+            Ok(Bsonc::empty())
+        }
+    }
+
+    pub(crate) fn to_mongoc(&self) -> Result<Bsonc> {
+        if let Some(size) = self.batch_size {
+            let d = doc! {
+                "batchSize": size,
+            };
+            Bsonc::from_document(&d)
+        } else {
+            Ok(Bsonc::empty())
         }
     }
 }
@@ -79,84 +100,97 @@ impl FindAndModify {
 
 ///  to configure a count operation.
 pub struct Count {
-    /// The query flags to use
-    pub query_flags: Flags<QueryFlag>,
     /// Number of results to skip, zero to ignore
     pub skip: u32,
     /// Limit to the number of results, zero to ignore
     pub limit: u32,
-    /// Optional extra keys to add to the count
-    pub opts: Option<Document>,
-    /// Read prefs to use
-    pub read_prefs: Option<ReadMode>,
 }
 
-impl Count {}
+impl Count {
+    pub(crate) fn into_mongoc(self) -> Result<Bsonc> {
+        let d = doc! {
+            "skip": self.skip,
+            "limit": self.limit,
+        };
+
+        Bsonc::from_document(&d)
+    }
+}
 
 impl Default for Count {
     /// Default options used if none are provided.
     fn default() -> Self {
-        Count {
-            query_flags: Flags::new(),
-            skip: 0,
-            limit: 0,
-            opts: None,
-            read_prefs: None,
-        }
+        Count { skip: 0, limit: 0 }
     }
 }
 
 ///  to configure an insert operation.
 pub struct Insert {
-    /// Flags to use
-    pub insert_flags: Flags<InsertFlag>,
-    /// Write concern to use
-    pub write_concern: WriteConcernLevel,
+    pub ordered: bool,
+    pub bypass_document_validation: bool,
 }
 
 impl Default for Insert {
     /// Default options used if none are provided.
     fn default() -> Self {
         Insert {
-            insert_flags: Flags::new(),
-            write_concern: WriteConcernLevel::Blocking,
+            ordered: true,
+            bypass_document_validation: false,
         }
     }
 }
 
-///  to configure a remove operation.
-pub struct Remove {
-    /// Flags to use
-    pub remove_flags: Flags<RemoveFlag>,
-    /// Write concern to use
-    pub write_concern: WriteConcernLevel,
+impl Insert {
+    pub(crate) fn into_mongoc(self) -> Result<Bsonc> {
+        let d = doc! {
+            "ordered": self.ordered,
+            "bypassDocumentValidation": self.bypass_document_validation,
+        };
+
+        Bsonc::from_document(&d)
+    }
 }
+
+/// For future use when Transactions are working
+pub struct Remove;
 
 impl Default for Remove {
     /// Default options used if none are provided.
     fn default() -> Self {
-        Remove {
-            remove_flags: Flags::new(),
-            write_concern: WriteConcernLevel::Blocking,
-        }
+        Remove {}
+    }
+}
+
+impl Remove {
+    pub(crate) fn into_mongoc(self) -> Result<Bsonc> {
+        Ok(Bsonc::empty())
     }
 }
 
 ///  to configure an update operation.
 pub struct Update {
-    /// Flags to use
-    pub update_flags: Flags<UpdateFlag>,
-    /// Write concern to use
-    pub write_concern: WriteConcernLevel,
+    pub upsert: bool,
+    pub bypass_document_validation: bool,
 }
 
 impl Default for Update {
     /// Default options used if none are provided.
     fn default() -> Self {
         Update {
-            update_flags: Flags::new(),
-            write_concern: WriteConcernLevel::Blocking,
+            upsert: false,
+            bypass_document_validation: false,
         }
+    }
+}
+
+impl Update {
+    pub(crate) fn into_mongoc(self) -> Result<Bsonc> {
+        let d = doc! {
+            "upsert": self.upsert,
+            "bypassDocumentValidation": self.bypass_document_validation,
+        };
+
+        Bsonc::from_document(&d)
     }
 }
 

@@ -11,6 +11,12 @@ pub struct Bsonc {
     inner: *mut bindings::bson_t,
 }
 
+impl Default for Bsonc {
+    fn default() -> Self {
+        Bsonc::empty()
+    }
+}
+
 impl Bsonc {
     pub fn empty() -> Bsonc {
         Bsonc::from_ptr(unsafe { bindings::bson_new() })

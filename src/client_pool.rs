@@ -1,6 +1,8 @@
 use crate::{
     bindings,
     client::{Client, Clientc},
+    error::Result,
+    ssl_options::SSLOptions,
     uri::{Uri, Uric},
 };
 use std::ptr;
@@ -40,12 +42,17 @@ impl ClientPoolc {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(uri: Uric) -> Self {
+    pub(crate) fn new(uri: Uric, ssl_options: Option<&SSLOptions>) -> Result<Self> {
         crate::init();
         unsafe {
             let inner = bindings::mongoc_client_pool_new(uri.as_mut_ptr());
+
+            if let Some(options) = ssl_options {
+                bindings::mongoc_client_pool_set_ssl_opts(inner, options.to_mongoc()?);
+            }
+
             assert!(!inner.is_null());
-            ClientPoolc { uri, inner }
+            Ok(ClientPoolc { uri, inner })
         }
     }
 }

@@ -32,6 +32,7 @@ mod read_concern;
 mod read_prefs;
 mod session;
 mod session_opts;
+mod ssl_options;
 mod transaction_opts;
 mod uri;
 mod write_concern;

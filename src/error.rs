@@ -31,6 +31,9 @@ pub enum MongoError {
     // from CString::new(db)
     Nul(NulError),
     InvalidReadConcern(ReadConcernLevel),
+    PathDoesNotExist(String),
+    SSLNoPEMFile,
+    SSLNoCAFile,
 }
 
 impl fmt::Display for MongoError {
@@ -43,6 +46,9 @@ impl fmt::Display for MongoError {
             MongoError::InvalidParams(ref err) => write!(f, "{}", err),
             MongoError::Nul(ref err) => write!(f, "{}", err),
             MongoError::InvalidReadConcern(ref err) => write!(f, "Invalid Read concern of {}", err),
+            MongoError::PathDoesNotExist(ref err) => write!(f, "Path not found {}", err),
+            MongoError::SSLNoPEMFile => write!(f, "No PEM File given"),
+            MongoError::SSLNoCAFile => write!(f, "No CA File given"),
         }
     }
 }
@@ -59,6 +65,11 @@ impl fmt::Debug for MongoError {
             MongoError::InvalidReadConcern(ref err) => {
                 write!(f, "MongoError (Invalid Read concern of {:?})", err)
             }
+            MongoError::PathDoesNotExist(ref err) => {
+                write!(f, "SSL Options (Path not found {:?})", err)
+            }
+            MongoError::SSLNoPEMFile => write!(f, "SSL Options (No PEM File given)"),
+            MongoError::SSLNoCAFile => write!(f, "SSL Options (No CA File given)"),
         }
     }
 }

@@ -9,6 +9,7 @@ pub use crate::{
         MongoErrorDomain, Result,
     },
     host::Host,
+    options::Count,
     read_prefs::{ReadMode, ReadPrefs},
     session::Session,
     uri::{Uri, Uric},

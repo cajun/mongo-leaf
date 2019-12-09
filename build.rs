@@ -32,21 +32,26 @@ fn lin(mongoc_version: &str) {
                     mongoc_version,
                     mongoc_version
                 );
-            assert!(Command::new("curl")
-                .arg("-O") // Save to disk
-                .arg("-L") // Follow redirects
-                .arg(url)
-                .status()
-                .expect("Could not run curl")
-                .success());
-
             let archive_name = format!("mongo-c-driver-{}.tar.gz", mongoc_version);
-            assert!(Command::new("tar")
-                .arg("xzf")
-                .arg(&archive_name)
-                .status()
-                .expect("Could not run tar")
-                .success());
+
+            if !Path::new(&archive_name).exists() {
+                assert!(Command::new("curl")
+                    .arg("-O") // Save to disk
+                    .arg("-L") // Follow redirects
+                    .arg(url)
+                    .status()
+                    .expect("Could not run curl")
+                    .success());
+            }
+
+            if !Path::new(&driver_src_path).exists() {
+                assert!(Command::new("tar")
+                    .arg("xzf")
+                    .arg(&archive_name)
+                    .status()
+                    .expect("Could not run tar")
+                    .success());
+            }
 
             let dst = Config::new(&driver_src_path)
                 .define("ENABLE_STATIC", "AUTO")
