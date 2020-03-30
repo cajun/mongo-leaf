@@ -4,11 +4,26 @@ use crate::{
     error::{BsoncError, Result},
     host::{Host, Hostc},
 };
-use std::ptr;
+
+use futures::stream::Stream;
+use std::{
+    ptr,
+    pin::Pin,
+    sync::{Arc,Mutex},
+    task::{Context, Poll, Waker},
+    thread,
+    time::Duration
+};
+
+#[derive(Debug)]
+struct SharedState {
+    waker: Option<Waker>
+}
 
 #[derive(Debug)]
 pub struct Cursorc {
     inner: *mut bindings::mongoc_cursor_t,
+    shared_state: Arc<Mutex<SharedState>>
 }
 
 pub trait Cursor {
@@ -18,7 +33,21 @@ pub trait Cursor {
 
 impl Cursorc {
     pub fn from_ptr(inner: *mut bindings::mongoc_cursor_t) -> Self {
-        Cursorc { inner }
+        let shared_state = Arc::new(Mutex::new(SharedState{ waker: None }));
+
+        let thread_shared_state = shared_state.clone();
+
+        let duration = Duration::from_nanos(100);
+        thread::spawn(move || {
+            thread::sleep(duration);
+            let mut shared_state = thread_shared_state.lock().unwrap();
+
+            if let Some(waker) = shared_state.waker.take() {
+                waker.wake();
+            }
+        });
+
+        Cursorc { inner, shared_state }
     }
 
     pub fn get_error(&self) -> Option<BsoncError> {
@@ -73,6 +102,27 @@ impl Iterator for Cursorc {
         } else {
             None
         }
+    }
+}
+
+impl Stream for Cursorc {
+    type Item = Result<bson::Document>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+
+        let mut bson_ptr: *const bindings::bson_t = ptr::null_mut();
+
+        let success = unsafe { bindings::mongoc_cursor_next(self.inner, &mut bson_ptr) };
+
+        if let Some(err) = self.get_error() {
+            Poll::Ready(Some(Err(err.into())))
+        } else if success {
+            let bsonc = Bsonc::from_ptr(bson_ptr);
+            Poll::Ready(Some(bsonc.as_document()))
+        } else {
+            Poll::Pending
+        }
+
     }
 }
 

@@ -1,0 +1,18 @@
+[package]
+name = "mongo-driver"
+version = "1.16.2"
+authors = ["Cajun <zac@kleinpeter.org>"]
+edition = "2018"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libc        = "0.2"
+openssl-sys = { version = "0.9", features = ["vendored"] }
+
+[build-dependencies]
+bindgen = "0.51.1"
+cmake = "0.1"
+pkg-config = "0.3"
+vcpkg = "0.2.6"

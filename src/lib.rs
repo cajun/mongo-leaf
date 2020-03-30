@@ -7,14 +7,14 @@ extern crate bson;
 #[macro_use]
 extern crate failure;
 
+#[macro_use]
+extern crate futures;
+
+extern crate mongo_driver;
+
 use std::sync::Once;
 
-#[allow(dead_code)]
-mod bindings {
-    #![allow(clippy::all)]
-    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-}
-
+use mongo_driver::bindings as bindings;
 mod bsonc;
 pub mod builder;
 mod change_stream;
