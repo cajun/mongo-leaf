@@ -1,5 +1,5 @@
 [package]
-name = "mongo-driver"
+name = "mongo-c-sys"
 version = "1.16.2"
 authors = ["Cajun <zac@kleinpeter.org>"]
 edition = "2018"

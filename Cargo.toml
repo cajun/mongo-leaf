@@ -22,6 +22,6 @@ futures = "0.3.1"
 #[badges]
 #gitlab = { repository = "...", branch = "master" }
 
-[dependencies.mongo-driver]
-path = "mongo-driver"
-version = "1.15.2"
+[dependencies.mongo-c-sys]
+path = "mongo-c-sys"
+version = "1.16.2"

@@ -10,11 +10,12 @@ extern crate failure;
 #[macro_use]
 extern crate futures;
 
-extern crate mongo_driver;
+extern crate mongo_c_sys;
 
 use std::sync::Once;
 
-use mongo_driver::bindings as bindings;
+use mongo_c_sys::bindings as bindings;
+
 mod bsonc;
 pub mod builder;
 mod change_stream;
