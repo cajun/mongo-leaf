@@ -5,8 +5,11 @@ extern crate vcpkg;
 extern crate bindgen;
 
 use cmake::Config;
-use std::env;
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    env,
+    fs
+};
 
 #[cfg(not(target_env = "msvc"))]
 fn lin(mongoc_version: &str) {
@@ -21,8 +24,11 @@ fn lin(mongoc_version: &str) {
     {
         let out_dir = env::var("OUT_DIR").expect("No out dir");
         //let out_dir = format!("{}/{}", out_dir_var, mongoc_version);
-        let driver_src_path = format!("mongo-c-driver-{}", mongoc_version);
+        let download_path = format!("{}/{}", out_dir, "download");
+        let driver_src_path = format!("{}/mongo-c-driver-{}", download_path, mongoc_version);
         println!("out {}", &out_dir);
+        println!("download_path {}", &download_path);
+        println!("driver_src_path {}", &driver_src_path);
 
         let libmongoc_path = Path::new(&out_dir).join("lib/libmongoc-1.0.a");
         if !libmongoc_path.exists() {
@@ -32,26 +38,32 @@ fn lin(mongoc_version: &str) {
                     mongoc_version,
                     mongoc_version
                 );
-            let archive_name = format!("mongo-c-driver-{}.tar.gz", mongoc_version);
+            let archive_name = format!("{}/mongo-c-driver-{}.tar.gz", download_path, mongoc_version);
+
+
+            println!("archive_name {}", &archive_name);
+            fs::create_dir_all(&download_path).expect("Cannot create directory");
 
             if !Path::new(&archive_name).exists() {
                 assert!(Command::new("curl")
-                    .arg("-O") // Save to disk
+                    .arg("-o") // Save to disk
+                    .arg(&archive_name)
                     .arg("-L") // Follow redirects
                     .arg(url)
                     .status()
                     .expect("Could not run curl")
                     .success());
-            }
 
-            if !Path::new(&driver_src_path).exists() {
                 assert!(Command::new("tar")
                     .arg("xzf")
                     .arg(&archive_name)
+                    .arg("-C")
+                    .arg(&download_path)
                     .status()
                     .expect("Could not run tar")
                     .success());
             }
+
 
             let dst = Config::new(&driver_src_path)
                 .define("ENABLE_STATIC", "AUTO")
