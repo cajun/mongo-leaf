@@ -1,6 +1,6 @@
 [package]
 name = "mongo-leaf"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Cajun <zac@kleinpeter.org>"]
 edition = "2018"
 description = "Simple wrapper around the mongoc lib"

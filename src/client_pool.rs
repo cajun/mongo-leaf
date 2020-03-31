@@ -13,6 +13,9 @@ pub struct ClientPoolc {
     inner: *mut bindings::mongoc_client_pool_t,
 }
 
+unsafe impl Send for ClientPoolc {}
+unsafe impl Sync for ClientPoolc {}
+
 pub trait ClientPool<'a> {
     type Pool: ClientPool<'a> + Sized;
     type Uri: Uri + Sized;
