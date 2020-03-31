@@ -1,6 +1,6 @@
 [package]
 name = "mongo-c-sys"
-version = "1.16.2"
+version = "1.16.3"
 authors = ["Cajun <zac@kleinpeter.org>"]
 edition = "2018"
 build = "build.rs"

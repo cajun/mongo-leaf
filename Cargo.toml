@@ -1,6 +1,6 @@
 [package]
 name = "mongo-leaf"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Cajun <zac@kleinpeter.org>"]
 edition = "2018"
 description = "Simple wrapper around the mongoc lib"
@@ -24,4 +24,4 @@ futures = "0.3.1"
 
 [dependencies.mongo-c-sys]
 path = "mongo-c-sys"
-version = "1.16.2"
+version = "1.16.3"

@@ -129,8 +129,7 @@ fn win(_mongoc_version: &str) {
 }
 
 fn main() {
-    //let mongoc_version = "1.15.2";
-    let mongoc_version = env!("CARGO_PKG_VERSION");
+    let mongoc_version = "1.16.2";
 
     #[cfg(target_env = "msvc")]
     win(mongoc_version);
