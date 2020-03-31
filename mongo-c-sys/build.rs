@@ -66,7 +66,7 @@ fn lin(mongoc_version: &str) {
 
 
             let dst = Config::new(&driver_src_path)
-                .define("ENABLE_STATIC", "AUTO")
+                .define("ENABLE_STATIC", "ON")
                 .define("ENABLE_AUTOMATIC_INIT_AND_CLEANUP", "OFF")
                 .define("CMAKE_BUILD_TYPE", "Release")
                 .build();
@@ -92,8 +92,8 @@ fn lin(mongoc_version: &str) {
 
         // Output to Cargo
         println!("cargo:rustc-link-search=native={}/lib", &out_dir);
-        println!("cargo:rustc-link-lib=dylib=bson-1.0");
-        println!("cargo:rustc-link-lib=dylib=mongoc-1.0");
+        println!("cargo:rustc-link-lib=static=bson-static-1.0");
+        println!("cargo:rustc-link-lib=static=mongoc-static-1.0");
     }
 }
 
