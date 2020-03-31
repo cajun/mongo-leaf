@@ -20,6 +20,44 @@ pub trait Collection {
     type Cursor: Cursor;
     type ChangeStream: ChangeStream;
 
+    /// Counts the number of documents in a collection.
+    ///
+    /// From MongoDB Docs
+    /// filter: A bson::Document containing the filter.
+    /// opts: A bson::Document, None to ignore.
+    /// read_prefs: A mongoc_read_prefs_t or None.
+    /// opts may be None or a BSON document with additional command options:
+    ///  readConcern: Construct a mongoc_read_concern_t and use mongoc_read_concern_append() to add the read concern to opts. See the example code for mongoc_client_read_command_with_opts(). Read concern requires MongoDB 3.2 or later, otherwise an error is returned.
+    ///  sessionId: First, construct a mongoc_client_session_t with mongoc_client_start_session(). You can begin a transaction with mongoc_client_session_start_transaction(), optionally with a mongoc_transaction_opt_t that overrides the options inherited from collection, and use mongoc_client_session_append() to add the session to opts. See the example code for mongoc_client_session_t.
+    ///  collation: Configure textual comparisons. See Setting Collation Order, and the MongoDB Manual entry on Collation. Collation requires MongoDB 3.2 or later, otherwise an error is returned.
+    ///  serverId: To target a specific server, include an int32 “serverId” field. Obtain the id by calling mongoc_client_select_server(), then mongoc_server_description_id() on its return value.
+    ///  skip: An int specifying how many documents matching the query should be skipped before counting.
+    ///  limit: An int specifying the maximum number of documents to count.
+    ///
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate bson;
+    /// use mongo_leaf::prelude::*;
+    /// use std::env;
+    ///
+    ///
+    /// # fn main() -> Result<()> {
+    /// env::set_var("MONGODB_URI","mongodb://standard");
+    ///
+    /// let builder = Builder::new();
+    /// let pool = builder.random_database_connect()?;
+    /// let mut client = pool.pop();
+    ///
+    /// let db = client.default_database();
+    /// let collection = db.get_collection("test");
+    /// let count = collection.count(None)?;
+    /// assert_eq!(0, count);
+    ///
+    /// # db.destroy();
+    /// # Ok(())
+    /// # }
+    /// ```
     fn count(&self, filter: Option<bson::Document>) -> Result<i64>;
     fn count_with_opts(&self, filter: Option<bson::Document>, opts: Option<Count>) -> Result<i64>;
 

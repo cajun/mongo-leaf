@@ -1,6 +1,6 @@
 [package]
 name = "mongo-leaf"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Cajun <zac@kleinpeter.org>"]
 edition = "2018"
 description = "Simple wrapper around the mongoc lib"
@@ -9,10 +9,10 @@ keywords = ["mongodb", "database"]
 categories = ["database", "api-bindings"]
 license = "MIT"
 readme = "README.md"
-documentation = "https://docs.rs/mongo-leaf"
+
 
 [dependencies]
-libc        = "0.2"
+libc = "0.2"
 bson = "0.14.0"
 rand = "0.7.2"
 failure = "0.1.6"

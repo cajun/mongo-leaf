@@ -56,12 +56,11 @@ impl Uri for Uric {
     ///   "mongodb://10.0.0.1:27017,10.0.0.1:27018,[::1]:27019/?ssl=true",
     ///   "mongodb://%2Ftmp%2Fmongodb-27017.sock",
     ///   "mongodb://user:pass@%2Ftmp%2Fmongodb-27017.sock",
-    ///   "mongodb://localhost,[::1]/mydb?authSource=mydb"
     /// ];
     ///
     /// valid_uris.iter().for_each(|valid| {
     ///   let uri = Uric::new(valid.to_string());
-    ///   assert!(uri.is_ok());
+    ///   assert!(uri.is_ok(), "Not ok for {}", valid.to_string());
     /// });
     /// ```
     ///
@@ -250,7 +249,7 @@ impl Uri for Uric {
     /// use mongo_leaf::prelude::*;
     /// use std::borrow::Cow;
     ///
-    /// let uri = Uric::new("mongodb://localhost:27017/?authSource=other_db").unwrap();
+    /// let uri = Uric::new("mongodb://some:user@localhost:27017/?authSource=other_db").unwrap();
     /// assert_eq!(uri.get_auth_source(), Some(Cow::Borrowed("other_db")));
     /// # }
     /// ```
